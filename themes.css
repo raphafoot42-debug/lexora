@@ -1,0 +1,80 @@
+/* ===== THEMES.CSS ===== */
+/* 6 thèmes couleur, appliqués via data-theme sur <html> ou <body> */
+/* Le thème choisi est sauvegardé en localStorage sous la clé "site_theme" */
+
+:root,
+[data-theme="cyan"] {
+  --accent-1: #22d3ee;
+  --accent-2: #3b82f6;
+  --accent-1-rgb: 34, 211, 238;
+  --accent-2-rgb: 59, 130, 246;
+}
+
+[data-theme="violet"] {
+  --accent-1: #a78bfa;
+  --accent-2: #6366f1;
+  --accent-1-rgb: 167, 139, 250;
+  --accent-2-rgb: 99, 102, 241;
+}
+
+[data-theme="emerald"] {
+  --accent-1: #34d399;
+  --accent-2: #10b981;
+  --accent-1-rgb: 52, 211, 153;
+  --accent-2-rgb: 16, 185, 129;
+}
+
+[data-theme="rose"] {
+  --accent-1: #fb7185;
+  --accent-2: #e11d48;
+  --accent-1-rgb: 251, 113, 133;
+  --accent-2-rgb: 225, 29, 72;
+}
+
+[data-theme="amber"] {
+  --accent-1: #fbbf24;
+  --accent-2: #f59e0b;
+  --accent-1-rgb: 251, 191, 36;
+  --accent-2-rgb: 245, 158, 11;
+}
+
+[data-theme="indigo"] {
+  --accent-1: #818cf8;
+  --accent-2: #4f46e5;
+  --accent-1-rgb: 129, 140, 248;
+  --accent-2-rgb: 79, 70, 229;
+}
+
+/* Base commune (indépendante du thème) */
+:root {
+  --bg-0: #05070d;
+  --bg-1: #0a0e18;
+  --bg-2: #10151f;
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-bg {
+  background: linear-gradient(120deg, var(--accent-1), var(--accent-2));
+}
+
+.accent-border {
+  border-color: rgba(var(--accent-1-rgb), 0.35);
+}
+
+.accent-glow {
+  box-shadow: 0 0 40px rgba(var(--accent-1-rgb), 0.15);
+}
