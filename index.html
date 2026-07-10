@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cyan">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Programme de parrainage — Gagne 40€ par vente</title>
+<link rel="stylesheet" href="themes.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="bg-decor"></div>
+
+<!-- NAVBAR -->
+<header class="navbar">
+  <div class="container flex-between">
+    <div class="navbar-left">
+      <div class="logo gradient-text">Lexora</div>
+      <div class="lang-select">
+        <button class="lang-btn" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <div class="theme-dot-group" id="themeDotGroup"></div>
+      <div class="vdivider"></div>
+      <a href="signup.html" class="btn btn-outline" data-i18n="nav.login">Connexion</a>
+      <a href="signup.html" class="btn btn-primary" data-i18n="nav.signup">S'inscrire</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="container" style="padding: 100px 24px 80px; text-align: center;">
+  <div class="card" style="display:inline-block; padding: 6px 16px; margin-bottom: 24px; border-radius: 999px;">
+    <span data-i18n="hero.badge" style="font-size:13px; font-weight:600;">Programme de parrainage</span>
+  </div>
+  <h1 style="font-size: 48px; font-weight: 800; letter-spacing: -0.03em; max-width: 720px; margin: 0 auto 20px;">
+    <span data-i18n="hero.title">Partage ton lien. Gagne 40€ par vente.</span>
+  </h1>
+  <p class="text-secondary" style="font-size: 18px; max-width: 560px; margin: 0 auto 36px;" data-i18n="hero.subtitle">
+    Rejoins le programme de parrainage : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.
+  </p>
+  <div class="flex-center" style="gap: 16px; flex-wrap: wrap;">
+    <a href="signup.html" class="btn btn-primary" style="padding: 14px 28px; font-size:15px;" data-i18n="hero.cta_primary">Créer mon compte</a>
+    <a href="#steps" class="btn btn-outline" style="padding: 14px 28px; font-size:15px;" data-i18n="hero.cta_secondary">Voir comment ça marche</a>
+  </div>
+
+  <!-- Mockup terminal animé (élément signature) -->
+  <div class="card accent-glow" style="max-width: 640px; margin: 64px auto 0; text-align:left; font-family: 'Courier New', monospace; font-size: 13px; padding: 0; overflow:hidden;">
+    <div style="display:flex; gap:6px; padding: 14px 18px; border-bottom: 1px solid var(--card-border);">
+      <div style="width:10px;height:10px;border-radius:50%;background:#f87171;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:#fbbf24;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:#34d399;"></div>
+    </div>
+    <div id="terminalBody" style="padding: 20px; color: var(--text-secondary); line-height: 1.8;"></div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section id="steps" class="container" style="padding: 60px 24px;">
+  <h2 class="text-center" style="font-size: 32px; font-weight: 700; margin-bottom: 48px;" data-i18n="steps.title">Comment ça marche</h2>
+  <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 24px;">
+    <div class="card">
+      <div class="gradient-text" style="font-size:28px; font-weight:800; margin-bottom:12px;">01</div>
+      <h3 style="font-size:18px; font-weight:700; margin-bottom:8px;" data-i18n="steps.1.title">1. Inscris-toi</h3>
+      <p class="text-secondary" style="font-size:14px;" data-i18n="steps.1.desc">Crée ton compte en quelques secondes et reçois ton lien de parrainage personnel.</p>
+    </div>
+    <div class="card">
+      <div class="gradient-text" style="font-size:28px; font-weight:800; margin-bottom:12px;">02</div>
+      <h3 style="font-size:18px; font-weight:700; margin-bottom:8px;" data-i18n="steps.2.title">2. Partage ton lien</h3>
+      <p class="text-secondary" style="font-size:14px;" data-i18n="steps.2.desc">Envoie ton lien à ton réseau, sur les réseaux sociaux, par message, où tu veux.</p>
+    </div>
+    <div class="card">
+      <div class="gradient-text" style="font-size:28px; font-weight:800; margin-bottom:12px;">03</div>
+      <h3 style="font-size:18px; font-weight:700; margin-bottom:8px;" data-i18n="steps.3.title">3. Sois payé</h3>
+      <p class="text-secondary" style="font-size:14px;" data-i18n="steps.3.desc">Dès qu'une vente est validée via ton lien, tu touches 40€. Le paiement est fait manuellement, rapidement, après chaque vente confirmée.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="container" style="padding: 60px 24px;">
+  <h2 class="text-center" style="font-size: 32px; font-weight: 700; margin-bottom: 48px;" data-i18n="features.title">Pourquoi participer</h2>
+  <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.1.title">40€ par vente</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.1.desc">Un montant fixe et clair à chaque vente réalisée grâce à ton lien.</p></div>
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.2.title">Lien personnel</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.2.desc">Un lien unique généré automatiquement à ton inscription.</p></div>
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.3.title">Suivi en temps réel</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.3.desc">Visites, inscriptions, ventes et gains, visibles depuis ton tableau de bord.</p></div>
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.4.title">Paiement rapide</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.4.desc">Chaque vente confirmée déclenche une notification pour un paiement rapide.</p></div>
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.5.title">Aucune limite</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.5.desc">Autant de ventes que tu veux, autant de fois 40€.</p></div>
+    <div class="card"><h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="features.6.title">Simple et transparent</h3><p class="text-secondary" style="font-size:14px;" data-i18n="features.6.desc">Tu vois exactement combien tu as gagné, et sur quelle vente.</p></div>
+  </div>
+</section>
+
+<!-- REFERRAL / 40€ -->
+<section class="container" style="padding: 60px 24px;">
+  <div class="card accent-glow" style="text-align:center; padding: 56px 32px;">
+    <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;" data-i18n="referral.title">Le programme en un coup d'œil</h2>
+    <p class="text-secondary" style="max-width:480px; margin: 0 auto 28px;" data-i18n="referral.desc">Chaque personne qui achète via ton lien de parrainage te fait gagner 40€, versés manuellement après validation du paiement.</p>
+    <div>
+      <div class="text-muted" style="font-size:13px; text-transform:uppercase; letter-spacing:0.05em;" data-i18n="referral.amount_label">Par vente confirmée</div>
+      <div class="gradient-text" style="font-size:56px; font-weight:800;" data-i18n="referral.amount_value">40€</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container flex-between">
+    <span class="text-muted" style="font-size:13px;">© 2026 Parrainage</span>
+    <a href="admin.html" class="footer-admin-link" data-i18n="footer.admin">Admin</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="lang.js"></script>
+<script>
+  // ---------- Tracking : visite via lien de parrainage ----------
+  const REF_STORAGE_KEY = "pending_referral_code";
+
+  async function trackReferralVisit() {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get("ref");
+    if (!refCode) return;
+
+    // On garde le code en mémoire pour le relier à l'inscription plus tard
+    localStorage.setItem(REF_STORAGE_KEY, refCode);
+
+    // On évite de logger plusieurs fois la même visite dans la même session
+    const sessionKey = "visit_logged_" + refCode;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    try {
+      // On résout le parrain à partir de son code pour stocker referrer_id
+      const { data: referrer, error: findError } = await supabaseClient
+        .from("users")
+        .select("id")
+        .eq("code_parrainage", refCode)
+        .single();
+
+      if (findError || !referrer) {
+        console.warn("Code de parrainage inconnu :", refCode);
+        return;
+      }
+
+      const { error: insertError } = await supabaseClient
+        .from("visits")
+        .insert({ referral_code: refCode, referrer_id: referrer.id });
+
+      if (insertError) {
+        console.error("Erreur enregistrement visite :", insertError);
+        return;
+      }
+
+      sessionStorage.setItem(sessionKey, "1");
+    } catch (err) {
+      console.error("Erreur tracking visite :", err);
+    }
+  }
+
+  // ---------- Thème ----------
+  const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
+  const THEME_STORAGE_KEY = "site_theme";
+
+  function getCurrentTheme() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || "cyan";
+  }
+
+  function setCurrentTheme(theme) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    updateThemeDots();
+  }
+
+  function updateThemeDots() {
+    const current = getCurrentTheme();
+    document.querySelectorAll(".theme-dot").forEach((dot) => {
+      dot.classList.toggle("active", dot.getAttribute("data-theme-value") === current);
+    });
+  }
+
+  function initThemeSelector() {
+    const group = document.getElementById("themeDotGroup");
+    const dotColors = {
+      cyan: "#22d3ee", violet: "#a78bfa", emerald: "#34d399",
+      rose: "#fb7185", amber: "#fbbf24", indigo: "#818cf8",
+    };
+    THEMES.forEach((theme) => {
+      const dot = document.createElement("button");
+      dot.className = "theme-dot";
+      dot.setAttribute("data-theme-value", theme);
+      dot.style.background = dotColors[theme];
+      dot.addEventListener("click", () => setCurrentTheme(theme));
+      group.appendChild(dot);
+    });
+    document.documentElement.setAttribute("data-theme", getCurrentTheme());
+    updateThemeDots();
+  }
+
+  // ---------- Terminal animé ----------
+  function typeTerminal() {
+    const lines = [
+      "$ lien_parrainage --status",
+      "> ton lien est actif ✔",
+      "$ ventes --today",
+      "> 3 ventes confirmées",
+      "> gains du jour : 120€"
+    ];
+    const el = document.getElementById("terminalBody");
+    let lineIndex = 0;
+    let charIndex = 0;
+
+    function typeNextChar() {
+      if (lineIndex >= lines.length) return;
+      const currentLine = lines[lineIndex];
+      if (charIndex === 0) {
+        const p = document.createElement("div");
+        p.className = "term-line";
+        el.appendChild(p);
+      }
+      const activeLine = el.lastElementChild;
+      activeLine.textContent = currentLine.slice(0, charIndex + 1);
+      charIndex++;
+      if (charIndex < currentLine.length) {
+        setTimeout(typeNextChar, 28);
+      } else {
+        lineIndex++;
+        charIndex = 0;
+        setTimeout(typeNextChar, 400);
+      }
+    }
+    typeNextChar();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initThemeSelector();
+    typeTerminal();
+    trackReferralVisit();
+  });
+</script>
+
+</body>
+</html>
