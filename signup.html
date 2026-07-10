@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cyan">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connexion / Inscription — Programme de parrainage</title>
+<link rel="stylesheet" href="themes.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="bg-decor"></div>
+
+<header class="navbar">
+  <div class="container flex-between">
+    <a href="index.html" class="logo gradient-text">Parrainage</a>
+    <div class="nav-actions">
+      <div class="selector-group">
+        <div class="lang-select">
+          <button class="lang-btn" data-lang="fr">FR</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <div class="theme-dot-group" id="themeDotGroup"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="container flex-center" style="min-height: 80vh; padding: 40px 24px;">
+  <div class="card accent-glow" style="width: 100%; max-width: 420px; padding: 40px;">
+
+    <h1 id="formTitle" style="font-size: 24px; font-weight: 700; margin-bottom: 24px; text-align:center;" data-i18n="auth.login_title">Connexion</h1>
+
+    <form id="authForm">
+      <div class="field">
+        <label data-i18n="auth.email">Adresse email</label>
+        <input type="email" id="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label data-i18n="auth.password">Mot de passe</label>
+        <input type="password" id="password" required autocomplete="current-password" minlength="6" />
+      </div>
+
+      <div id="errorMsg" class="error-msg"></div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary" style="width:100%; margin-top: 8px;" data-i18n="auth.login_btn">
+        Se connecter
+      </button>
+    </form>
+
+    <div class="text-center" style="margin-top: 20px;">
+      <a href="#" id="switchModeLink" class="text-secondary" style="font-size: 14px;" data-i18n="auth.switch_to_signup">
+        Pas encore de compte ? Inscris-toi
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="lang.js"></script>
+<script>
+  // ---------- Thème ----------
+  const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
+  const THEME_STORAGE_KEY = "site_theme";
+
+  function getCurrentTheme() {
+    return localStorage.getItem(THEME_STORAGE_KEY) || "cyan";
+  }
+  function setCurrentTheme(theme) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    updateThemeDots();
+  }
+  function updateThemeDots() {
+    const current = getCurrentTheme();
+    document.querySelectorAll(".theme-dot").forEach((dot) => {
+      dot.classList.toggle("active", dot.getAttribute("data-theme-value") === current);
+    });
+  }
+  function initThemeSelector() {
+    const group = document.getElementById("themeDotGroup");
+    const dotColors = {
+      cyan: "#22d3ee", violet: "#a78bfa", emerald: "#34d399",
+      rose: "#fb7185", amber: "#fbbf24", indigo: "#818cf8",
+    };
+    THEMES.forEach((theme) => {
+      const dot = document.createElement("button");
+      dot.className = "theme-dot";
+      dot.setAttribute("data-theme-value", theme);
+      dot.style.background = dotColors[theme];
+      dot.addEventListener("click", () => setCurrentTheme(theme));
+      group.appendChild(dot);
+    });
+    document.documentElement.setAttribute("data-theme", getCurrentTheme());
+    updateThemeDots();
+  }
+
+  // ---------- Auth : bascule connexion / inscription ----------
+  let mode = "login"; // "login" | "signup"
+
+  const formTitle = document.getElementById("formTitle");
+  const submitBtn = document.getElementById("submitBtn");
+  const switchModeLink = document.getElementById("switchModeLink");
+  const errorMsg = document.getElementById("errorMsg");
+  const authForm = document.getElementById("authForm");
+
+  function updateFormMode() {
+    if (mode === "login") {
+      formTitle.setAttribute("data-i18n", "auth.login_title");
+      submitBtn.setAttribute("data-i18n", "auth.login_btn");
+      switchModeLink.setAttribute("data-i18n", "auth.switch_to_signup");
+    } else {
+      formTitle.setAttribute("data-i18n", "auth.signup_title");
+      submitBtn.setAttribute("data-i18n", "auth.signup_btn");
+      switchModeLink.setAttribute("data-i18n", "auth.switch_to_login");
+    }
+    applyI18n();
+  }
+
+  switchModeLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    mode = mode === "login" ? "signup" : "login";
+    errorMsg.classList.remove("visible");
+    updateFormMode();
+  });
+
+  function showError(message) {
+    errorMsg.textContent = message;
+    errorMsg.classList.add("visible");
+  }
+
+  const REF_STORAGE_KEY = "pending_referral_code";
+
+  async function linkSignupToReferrer(newUser) {
+    if (!newUser) return;
+    const refCode = localStorage.getItem(REF_STORAGE_KEY);
+    if (!refCode) return;
+
+    try {
+      const { data: referrer, error: findError } = await supabaseClient
+        .from("users")
+        .select("id")
+        .eq("code_parrainage", refCode)
+        .single();
+
+      if (findError || !referrer) {
+        console.warn("Code de parrainage inconnu à l'inscription :", refCode);
+        return;
+      }
+
+      // Le trigger a déjà créé le profil "users" à l'inscription : on complète juste referred_by
+      const { error: updateError } = await supabaseClient
+        .from("users")
+        .update({ referred_by: referrer.id })
+        .eq("id", newUser.id);
+
+      if (updateError) {
+        console.error("Erreur liaison parrain :", updateError);
+        return;
+      }
+
+      // Le code a fait son travail, on nettoie
+      localStorage.removeItem(REF_STORAGE_KEY);
+    } catch (err) {
+      console.error("Erreur linkSignupToReferrer :", err);
+    }
+  }
+
+  authForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.classList.remove("visible");
+    submitBtn.disabled = true;
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      let result;
+      if (mode === "login") {
+        result = await supabaseClient.auth.signInWithPassword({ email, password });
+      } else {
+        result = await supabaseClient.auth.signUp({ email, password });
+      }
+
+      if (result.error) {
+        showError(result.error.message || t("auth.error_generic"));
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // Si l'inscription vient de réussir, on relie le nouveau compte à son parrain
+      // (le code a été mémorisé par index.html lors de la visite via ?ref=CODE)
+      if (mode === "signup") {
+        await linkSignupToReferrer(result.data.user);
+      }
+
+      // Succès : redirection vers le dashboard
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      console.error(err);
+      showError(t("auth.error_generic"));
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initThemeSelector();
+    updateFormMode();
+  });
+</script>
+
+</body>
+</html>
