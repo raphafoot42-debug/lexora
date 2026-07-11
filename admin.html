@@ -3,56 +3,29 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Admin — Programme de parrainage</title>
+<title>Admin — Lexora</title>
 <link rel="stylesheet" href="themes.css" />
 <link rel="stylesheet" href="styles.css" />
 <style>
-  .admin-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 32px;
-  }
-  .admin-tab {
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-weight: 600;
-    background: transparent;
-    border: 1px solid var(--card-border);
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-  .admin-tab.active {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border-color: rgba(var(--accent-1-rgb), 0.4);
-  }
+  .admin-tabs { display: flex; gap: 8px; margin-bottom: 32px; }
+  .admin-tab { padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); cursor: pointer; }
+  .admin-tab.active { background: var(--card-bg); color: var(--text-primary); border-color: rgba(var(--accent-1-rgb), 0.4); }
   .admin-panel { display: none; }
   .admin-panel.active { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--card-border); }
   th { color: var(--text-secondary); font-weight: 600; font-size: 13px; }
-  .status-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .status-active { background: rgba(52,211,153,0.15); color: #34d399; }
   .status-suspended { background: rgba(248,113,113,0.15); color: #f87171; }
-  .btn-sm { padding: 6px 14px; font-size: 13px; }
-
-  /* Réutilisation du layout dashboard pour les onglets Noé/Raphaël */
-  .dash-layout-mini { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
-  .sidebar-mini { display: flex; flex-direction: column; gap: 4px; }
-  .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size:14px; font-weight:500; cursor:pointer; }
-  .sidebar-link:hover { background: var(--card-bg); color: var(--text-primary); }
-  .sidebar-link.active { background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); }
-  .stats-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:16px; margin-bottom:24px; }
-  .stat-card .stat-label { font-size:13px; color: var(--text-secondary); margin-bottom:8px; }
-  .stat-card .stat-value { font-size:24px; font-weight:800; }
-  .link-box { display:flex; align-items:center; gap:12px; padding:14px 16px; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); font-family: monospace; font-size:13px; word-break:break-all; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .field-inline { display:flex; flex-direction:column; gap:6px; }
+  .field-inline label { font-size: 12px; color: var(--text-secondary); font-weight:600; }
+  .field-inline input { background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px; }
+  .form-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:14px; margin-bottom:14px; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:none; align-items:center; justify-content:center; padding:24px; }
+  .modal-overlay.active { display:flex; }
+  .modal-box { max-width: 640px; width:100%; max-height: 85vh; overflow-y:auto; }
 </style>
 </head>
 <body>
@@ -77,7 +50,6 @@
   <canvas class="bg-particles"></canvas>
 </div>
 
-<!-- ===== GATE MOT DE PASSE ADMIN ===== -->
 <section id="passwordGate" class="container flex-center" style="min-height: 100vh;">
   <div class="card accent-glow" style="width:100%; max-width:380px; padding:40px;">
     <h1 style="font-size:22px; font-weight:700; margin-bottom:20px; text-align:center;">Accès admin</h1>
@@ -90,7 +62,6 @@
   </div>
 </section>
 
-<!-- ===== CONTENU ADMIN (caché tant que non authentifié) ===== -->
 <div id="adminContent" style="display:none;">
   <header class="navbar">
     <div class="container flex-between">
@@ -109,111 +80,75 @@
 
   <main class="container" style="padding: 32px 24px 80px;">
     <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="admin" data-i18n="admin.tab.admin">Admin</button>
-      <button class="admin-tab" data-tab="noe" data-i18n="admin.tab.noe">Noé</button>
-      <button class="admin-tab" data-tab="raphael" data-i18n="admin.tab.raphael">Raphaël</button>
+      <button class="admin-tab active" data-tab="admin">Admin</button>
+      <button class="admin-tab" data-tab="noe">Noé</button>
+      <button class="admin-tab" data-tab="raphael">Raphaël</button>
     </div>
 
     <!-- ===== ONGLET ADMIN ===== -->
     <section class="admin-panel active" id="panel-admin">
       <div class="card" style="margin-bottom: 24px;">
-        <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="admin.add_link">Ajouter des liens au pool</h3>
-        <p class="text-secondary" style="font-size:13px; margin-bottom:14px;">Colle un lien Stripe par ligne. L'ID Stripe de chaque lien est retrouvé automatiquement.</p>
-        <textarea id="newLinksTextarea" rows="5" placeholder="https://buy.stripe.com/xxxx1&#10;https://buy.stripe.com/xxxx2&#10;https://buy.stripe.com/xxxx3" style="width:100%; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text-primary); font-size:13px; font-family: monospace; resize: vertical; margin-bottom:12px;"></textarea>
-        <button class="btn btn-primary" id="addLinkBtn">Enregistrer les liens</button>
-        <div id="addLinkResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px;">Créer un affilié</h3>
+        <div class="form-grid">
+          <div class="field-inline">
+            <label>Prénom</label>
+            <input type="text" id="newPrenom" placeholder="Lucas" />
+          </div>
+          <div class="field-inline">
+            <label>Mot de passe</label>
+            <input type="text" id="newPassword" placeholder="Mot de passe choisi avec lui" />
+          </div>
+          <div class="field-inline">
+            <label>Lien Roulette</label>
+            <input type="text" id="newLinkRoulette" placeholder="https://..." />
+          </div>
+          <div class="field-inline">
+            <label>Lien Direct</label>
+            <input type="text" id="newLinkDirect" placeholder="https://..." />
+          </div>
+          <div class="field-inline">
+            <label>Commission par vente (€)</label>
+            <input type="number" id="newCommission" placeholder="40" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="createAffiliateBtn">Enregistrer</button>
+        <div id="createResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
       </div>
 
       <div class="card" style="padding:0; overflow:hidden;">
         <table>
           <thead>
             <tr>
-              <th data-i18n="admin.users.email">Email</th>
-              <th data-i18n="admin.users.link">Lien attribué</th>
-              <th data-i18n="admin.users.status">Statut</th>
+              <th>Prénom</th>
+              <th>Commission</th>
+              <th>Statut</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="usersTableBody">
-            <!-- rempli en JS -->
-          </tbody>
+          <tbody id="affiliatesTableBody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- ===== ONGLET NOÉ ===== -->
+    <!-- ===== ONGLETS NOÉ / RAPHAËL ===== -->
     <section class="admin-panel" id="panel-noe">
-      <div class="dash-layout-mini">
-        <aside class="sidebar-mini">
-          <div class="sidebar-link active" data-view="overview" data-user="noe" data-i18n="dash.nav.overview">Vue d'ensemble</div>
-          <div class="sidebar-link" data-view="referral" data-user="noe" data-i18n="dash.nav.referral">Lien de parrainage</div>
-          <div class="sidebar-link" data-view="analytics" data-user="noe" data-i18n="dash.nav.analytics">Analyse</div>
-        </aside>
-        <div>
-          <div class="mini-view active" id="noe-view-overview">
-            <div class="stats-grid">
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.visits">Visites</div><div class="stat-value" id="noeStatVisits">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.signups">Inscriptions</div><div class="stat-value" id="noeStatSignups">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.sales">Ventes</div><div class="stat-value" id="noeStatSales">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.earnings">Gains</div><div class="stat-value gradient-text" id="noeStatEarnings">—</div></div>
-            </div>
-          </div>
-          <div class="mini-view" id="noe-view-referral" style="display:none;">
-            <div class="link-box"><span id="noeReferralLink">—</span></div>
-          </div>
-          <div class="mini-view" id="noe-view-analytics" style="display:none;">
-            <div class="card" style="padding:0; overflow:hidden;">
-              <table>
-                <thead><tr><th data-i18n="dash.analytics.date">Date</th><th data-i18n="dash.analytics.sales">Ventes</th><th data-i18n="dash.analytics.earnings">Gains</th></tr></thead>
-                <tbody id="noeAnalyticsBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="noe-content"></div>
     </section>
-
-    <!-- ===== ONGLET RAPHAËL ===== -->
     <section class="admin-panel" id="panel-raphael">
-      <div class="dash-layout-mini">
-        <aside class="sidebar-mini">
-          <div class="sidebar-link active" data-view="overview" data-user="raphael" data-i18n="dash.nav.overview">Vue d'ensemble</div>
-          <div class="sidebar-link" data-view="referral" data-user="raphael" data-i18n="dash.nav.referral">Lien de parrainage</div>
-          <div class="sidebar-link" data-view="analytics" data-user="raphael" data-i18n="dash.nav.analytics">Analyse</div>
-        </aside>
-        <div>
-          <div class="mini-view active" id="raphael-view-overview">
-            <div class="stats-grid">
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.visits">Visites</div><div class="stat-value" id="raphaelStatVisits">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.signups">Inscriptions</div><div class="stat-value" id="raphaelStatSignups">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.sales">Ventes</div><div class="stat-value" id="raphaelStatSales">—</div></div>
-              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.earnings">Gains</div><div class="stat-value gradient-text" id="raphaelStatEarnings">—</div></div>
-            </div>
-          </div>
-          <div class="mini-view" id="raphael-view-referral" style="display:none;">
-            <div class="link-box"><span id="raphaelReferralLink">—</span></div>
-          </div>
-          <div class="mini-view" id="raphael-view-analytics" style="display:none;">
-            <div class="card" style="padding:0; overflow:hidden;">
-              <table>
-                <thead><tr><th data-i18n="dash.analytics.date">Date</th><th data-i18n="dash.analytics.sales">Ventes</th><th data-i18n="dash.analytics.earnings">Gains</th></tr></thead>
-                <tbody id="raphaelAnalyticsBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="raphael-content"></div>
     </section>
 
   </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
+<!-- ===== MODAL : voir dashboard / modifier un affilié ===== -->
+<div class="modal-overlay" id="affiliateModal">
+  <div class="card modal-box" id="affiliateModalBody"></div>
+</div>
+
 <script src="lang.js"></script>
 <script src="decor.js"></script>
 <script>
-  // ---------- Thème ----------
   const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
   const THEME_STORAGE_KEY = "site_theme";
   function getCurrentTheme() { return localStorage.getItem(THEME_STORAGE_KEY) || "cyan"; }
@@ -243,12 +178,9 @@
     updateThemeDots();
   }
 
-  // ---------- Gate mot de passe admin ----------
-  // Le mot de passe n'est JAMAIS vérifié côté client : on envoie la saisie
-  // à la Netlify Function admin-auth.js, qui compare avec la variable d'env ADMIN_PASSWORD.
+  const ADMIN_SESSION_KEY = "admin_authenticated";
   const gateSubmitBtn = document.getElementById("gateSubmitBtn");
   const gateError = document.getElementById("gateError");
-  const ADMIN_SESSION_KEY = "admin_authenticated";
 
   async function submitAdminPassword() {
     const password = document.getElementById("adminPasswordInput").value;
@@ -270,8 +202,6 @@
       }
 
       const { token } = await res.json();
-      // Le token est renvoyé par admin-auth.js et revalidé par chaque function
-      // admin sensible (ex: suspend-user.js) — jamais de check "en dur" côté front.
       sessionStorage.setItem(ADMIN_SESSION_KEY, token);
       showAdminContent();
     } catch (err) {
@@ -287,17 +217,23 @@
     if (e.key === "Enter") submitAdminPassword();
   });
 
+  function adminHeaders() {
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${sessionStorage.getItem(ADMIN_SESSION_KEY)}`,
+    };
+  }
+
   function showAdminContent() {
     document.getElementById("passwordGate").style.display = "none";
     document.getElementById("adminContent").style.display = "block";
     initThemeSelector();
     initAdminTabs();
-    loadUsersTable();
-    loadUserPanel("noe");
-    loadUserPanel("raphael");
+    loadAffiliatesTable();
+    loadSpecialAffiliatePanel("noe", "noe-content");
+    loadSpecialAffiliatePanel("raphael", "raphael-content");
   }
 
-  // ---------- Onglets Admin / Noé / Raphaël ----------
   function initAdminTabs() {
     document.querySelectorAll(".admin-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -307,173 +243,332 @@
         document.getElementById("panel-" + tab.getAttribute("data-tab")).classList.add("active");
       });
     });
-
-    document.querySelectorAll(".sidebar-link[data-user]").forEach((link) => {
-      link.addEventListener("click", () => {
-        const user = link.getAttribute("data-user");
-        const view = link.getAttribute("data-view");
-        document.querySelectorAll(`.sidebar-link[data-user="${user}"]`).forEach((l) => l.classList.remove("active"));
-        link.classList.add("active");
-        ["overview", "referral", "analytics"].forEach((v) => {
-          const el = document.getElementById(`${user}-view-${v}`);
-          if (el) el.style.display = v === view ? "block" : "none";
-        });
-      });
-    });
   }
 
-  // ---------- Tableau utilisateurs (onglet Admin) ----------
-  async function loadUsersTable() {
-    const { data: users, error } = await supabaseClient
-      .from("users")
-      .select("*")
-      .order("created_at", { ascending: false });
+  // ===== Créer un affilié =====
+  document.getElementById("createAffiliateBtn").addEventListener("click", async () => {
+    const prenom = document.getElementById("newPrenom").value.trim();
+    const password = document.getElementById("newPassword").value.trim();
+    const linkRoulette = document.getElementById("newLinkRoulette").value.trim();
+    const linkDirect = document.getElementById("newLinkDirect").value.trim();
+    const commissionAmount = document.getElementById("newCommission").value.trim();
+    const resultBox = document.getElementById("createResult");
 
-    if (error) {
-      console.error("Erreur chargement utilisateurs :", error);
+    if (!prenom || !password || !linkRoulette || !linkDirect || !commissionAmount) {
+      resultBox.textContent = "Tous les champs sont obligatoires.";
+      resultBox.style.color = "#f87171";
       return;
     }
 
-    const tbody = document.getElementById("usersTableBody");
-    tbody.innerHTML = "";
+    resultBox.style.color = "";
+    resultBox.textContent = "Enregistrement en cours...";
 
-    users.forEach((u) => {
-      const isActive = u.statut === "actif";
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${u.email}</td>
-        <td style="font-family:monospace; font-size:12px;">${u.code_parrainage || "—"}</td>
-        <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
-        <td><button class="btn btn-outline btn-sm" data-user-id="${u.id}" data-current-status="${u.statut}">${isActive ? "Suspendre" : "Réactiver"}</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
+    try {
+      const res = await fetch("/.netlify/functions/admin-save-affiliate", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({ prenom, password, linkRoulette, linkDirect, commissionAmount }),
+      });
 
-    tbody.querySelectorAll("button[data-user-id]").forEach((btn) => {
-      btn.addEventListener("click", () => toggleUserStatus(btn));
-    });
+      if (!res.ok) {
+        const errText = await res.text();
+        resultBox.textContent = res.status === 409 ? "Ce prénom est déjà utilisé." : "Erreur : " + errText;
+        resultBox.style.color = "#f87171";
+        return;
+      }
+
+      resultBox.textContent = "Affilié créé ✔";
+      document.getElementById("newPrenom").value = "";
+      document.getElementById("newPassword").value = "";
+      document.getElementById("newLinkRoulette").value = "";
+      document.getElementById("newLinkDirect").value = "";
+      document.getElementById("newCommission").value = "";
+      loadAffiliatesTable();
+    } catch (err) {
+      console.error(err);
+      resultBox.textContent = "Erreur lors de la création.";
+      resultBox.style.color = "#f87171";
+    }
+  });
+
+  // ===== Tableau des affiliés =====
+  async function loadAffiliatesTable() {
+    try {
+      const res = await fetch("/.netlify/functions/admin-list-affiliates", {
+        method: "POST",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) return;
+
+      const { affiliates } = await res.json();
+      const tbody = document.getElementById("affiliatesTableBody");
+      tbody.innerHTML = "";
+
+      affiliates.forEach((a) => {
+        const isActive = a.statut === "actif";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${a.prenom}</td>
+          <td>${a.commission_amount}€</td>
+          <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
+          <td style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" data-action="view" data-id="${a.id}">Voir dashboard</button>
+            <button class="btn btn-outline btn-sm" data-action="edit" data-id="${a.id}">Modifier</button>
+            <button class="btn btn-outline btn-sm" data-action="toggle" data-id="${a.id}" data-status="${a.statut}">${isActive ? "Suspendre" : "Réactiver"}</button>
+            <button class="btn btn-outline btn-sm" data-action="delete" data-id="${a.id}" style="color:#f87171;">Supprimer</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll("button[data-action='view']").forEach((btn) =>
+        btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-id"), "view"))
+      );
+      tbody.querySelectorAll("button[data-action='edit']").forEach((btn) =>
+        btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-id"), "edit"))
+      );
+      tbody.querySelectorAll("button[data-action='toggle']").forEach((btn) =>
+        btn.addEventListener("click", () => toggleAffiliateStatus(btn))
+      );
+      tbody.querySelectorAll("button[data-action='delete']").forEach((btn) =>
+        btn.addEventListener("click", () => deleteAffiliate(btn.getAttribute("data-id")))
+      );
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  async function toggleUserStatus(btn) {
-    const userId = btn.getAttribute("data-user-id");
-    const currentStatus = btn.getAttribute("data-current-status");
+  async function toggleAffiliateStatus(btn) {
+    const userId = btn.getAttribute("data-id");
+    const currentStatus = btn.getAttribute("data-status");
     const newStatus = currentStatus === "actif" ? "suspendu" : "actif";
     btn.disabled = true;
 
     try {
-      // La bascule de statut passe par une Netlify Function protégée par le token admin,
-      // pas par un update direct côté client (évite qu'un utilisateur suspende un autre compte).
       const res = await fetch("/.netlify/functions/admin-toggle-user", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${sessionStorage.getItem(ADMIN_SESSION_KEY)}`,
-        },
+        headers: adminHeaders(),
         body: JSON.stringify({ userId, newStatus }),
       });
-
-      if (!res.ok) throw new Error("Échec mise à jour statut");
-      loadUsersTable();
+      if (!res.ok) throw new Error("Échec");
+      loadAffiliatesTable();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la mise à jour du statut.");
+      alert("Erreur lors du changement de statut.");
       btn.disabled = false;
     }
   }
 
-  document.getElementById("addLinkBtn").addEventListener("click", async () => {
-    const textarea = document.getElementById("newLinksTextarea");
-    const resultBox = document.getElementById("addLinkResult");
-    const urls = textarea.value.split("\n").map((u) => u.trim()).filter((u) => u.length > 0);
-
-    if (urls.length === 0) {
-      resultBox.textContent = "Colle au moins un lien.";
-      return;
-    }
-
-    resultBox.textContent = "Enregistrement en cours...";
-
+  async function deleteAffiliate(id) {
+    if (!confirm("Supprimer définitivement cet affilié ? Cette action est irréversible.")) return;
     try {
-      const res = await fetch("/.netlify/functions/admin-add-link", {
+      const res = await fetch("/.netlify/functions/admin-delete-affiliate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${sessionStorage.getItem(ADMIN_SESSION_KEY)}`,
-        },
-        body: JSON.stringify({ urls }),
+        headers: adminHeaders(),
+        body: JSON.stringify({ id }),
       });
-
-      if (!res.ok) throw new Error("Échec ajout des liens");
-
-      const { added, notFound } = await res.json();
-      textarea.value = "";
-
-      let message = `${added} lien(s) ajouté(s) au pool ✔`;
-      if (notFound && notFound.length > 0) {
-        message += `\n${notFound.length} lien(s) non reconnus par Stripe : ${notFound.join(", ")}`;
-      }
-      resultBox.textContent = message;
-      resultBox.style.whiteSpace = "pre-line";
+      if (!res.ok) throw new Error("Échec");
+      loadAffiliatesTable();
     } catch (err) {
       console.error(err);
-      resultBox.textContent = "Erreur lors de l'ajout des liens.";
+      alert("Erreur lors de la suppression.");
     }
-  });
+  }
 
-  // ---------- Panneaux Noé / Raphaël (dashboard identique à un client) ----------
-  async function loadUserPanel(userKey) {
-    // userKey correspond à un email connu (ex: noe@... / raphael@...) — à ajuster
-    // selon les emails réels une fois les comptes créés.
-    const { data: profile, error } = await supabaseClient
-      .from("users")
-      .select("*")
-      .ilike("email", `%${userKey}%`)
-      .single();
+  // ===== Modal : voir dashboard OU modifier =====
+  async function openAffiliateModal(affiliateId, mode) {
+    const overlay = document.getElementById("affiliateModal");
+    const box = document.getElementById("affiliateModalBody");
+    box.innerHTML = "<p style='padding:24px;'>Chargement...</p>";
+    overlay.classList.add("active");
 
-    if (error || !profile) {
-      console.warn(`Profil ${userKey} introuvable pour l'instant.`);
+    try {
+      const res = await fetch("/.netlify/functions/admin-get-affiliate-data", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({ affiliateId }),
+      });
+      if (!res.ok) {
+        box.innerHTML = "<p style='padding:24px;'>Erreur de chargement.</p>";
+        return;
+      }
+      const { affiliate, stats, sales } = await res.json();
+
+      if (mode === "view") {
+        renderViewModal(box, affiliate, stats, sales);
+      } else {
+        renderEditModal(box, affiliate);
+      }
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = "<p style='padding:24px;'>Erreur.</p>";
+    }
+  }
+
+  function renderViewModal(box, affiliate, stats, sales) {
+    const rows = sales.map((s) => `<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.amount}€</td><td>${s.commission}€</td></tr>`).join("");
+    box.innerHTML = `
+      <div style="padding:28px;">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h2 style="font-size:20px; font-weight:700;">Dashboard de ${affiliate.prenom}</h2>
+          <button class="btn btn-outline btn-sm" id="closeModalBtn">Fermer</button>
+        </div>
+        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Ventes</div><div style="font-size:22px; font-weight:800;">${stats.totalSales}</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Gains</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Commission/vente</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${affiliate.commission_amount}€</div></div>
+        </div>
+        <div class="field-inline" style="margin-bottom:10px;"><label>Lien Roulette</label><div class="link-box" style="margin-top:4px;">${affiliate.link_roulette}</div></div>
+        <div class="field-inline" style="margin-bottom:16px;"><label>Lien Direct</label><div class="link-box" style="margin-top:4px;">${affiliate.link_direct}</div></div>
+        <table>
+          <thead><tr><th>Date</th><th>Montant payé</th><th>Commission</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="3" class="text-muted" style="text-align:center; padding:16px;">Aucune vente</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById("closeModalBtn").addEventListener("click", closeAffiliateModal);
+  }
+
+  function renderEditModal(box, affiliate) {
+    box.innerHTML = `
+      <div style="padding:28px;">
+        <div class="flex-between" style="margin-bottom:20px;">
+          <h2 style="font-size:20px; font-weight:700;">Modifier ${affiliate.prenom}</h2>
+          <button class="btn btn-outline btn-sm" id="closeModalBtn">Fermer</button>
+        </div>
+        <div class="form-grid">
+          <div class="field-inline"><label>Prénom</label><input type="text" id="editPrenom" value="${affiliate.prenom}" /></div>
+          <div class="field-inline"><label>Nouveau mot de passe (vide = inchangé)</label><input type="text" id="editPassword" placeholder="Laisser vide pour ne pas changer" /></div>
+          <div class="field-inline"><label>Lien Roulette</label><input type="text" id="editLinkRoulette" value="${affiliate.link_roulette}" /></div>
+          <div class="field-inline"><label>Lien Direct</label><input type="text" id="editLinkDirect" value="${affiliate.link_direct}" /></div>
+          <div class="field-inline"><label>Commission (€)</label><input type="number" id="editCommission" value="${affiliate.commission_amount}" /></div>
+        </div>
+        <button class="btn btn-primary" id="saveEditBtn">Enregistrer les modifications</button>
+        <div id="editResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+      </div>
+    `;
+    document.getElementById("closeModalBtn").addEventListener("click", closeAffiliateModal);
+    document.getElementById("saveEditBtn").addEventListener("click", () => saveAffiliateEdit(affiliate.id));
+  }
+
+  async function saveAffiliateEdit(id) {
+    const prenom = document.getElementById("editPrenom").value.trim();
+    const password = document.getElementById("editPassword").value.trim();
+    const linkRoulette = document.getElementById("editLinkRoulette").value.trim();
+    const linkDirect = document.getElementById("editLinkDirect").value.trim();
+    const commissionAmount = document.getElementById("editCommission").value.trim();
+    const resultBox = document.getElementById("editResult");
+
+    if (!prenom || !linkRoulette || !linkDirect || !commissionAmount) {
+      resultBox.textContent = "Tous les champs (sauf mot de passe) sont obligatoires.";
+      resultBox.style.color = "#f87171";
       return;
     }
 
-    const { data: sales } = await supabaseClient.from("sales").select("*").eq("referrer_id", profile.id);
-    const { count: visitCount } = await supabaseClient.from("visits").select("*", { count: "exact", head: true }).eq("referrer_id", profile.id);
-    const { count: signupCount } = await supabaseClient.from("users").select("*", { count: "exact", head: true }).eq("referred_by", profile.id);
+    try {
+      const body = { id, prenom, linkRoulette, linkDirect, commissionAmount };
+      if (password) body.password = password;
 
-    const totalSales = sales ? sales.length : 0;
-    const totalEarnings = sales ? sales.reduce((sum, s) => sum + (s.commission || 40), 0) : 0;
+      const res = await fetch("/.netlify/functions/admin-save-affiliate", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify(body),
+      });
 
-    document.getElementById(`${userKey}StatVisits`).textContent = visitCount ?? 0;
-    document.getElementById(`${userKey}StatSignups`).textContent = signupCount ?? 0;
-    document.getElementById(`${userKey}StatSales`).textContent = totalSales;
-    document.getElementById(`${userKey}StatEarnings`).textContent = totalEarnings + "€";
+      if (!res.ok) {
+        resultBox.textContent = "Erreur lors de la modification.";
+        resultBox.style.color = "#f87171";
+        return;
+      }
 
-    const { data: linkRow } = await supabaseClient
-      .from("referral_links")
-      .select("url")
-      .eq("assigned_to", profile.id)
-      .single();
+      resultBox.style.color = "";
+      resultBox.textContent = "Modifié ✔";
+      loadAffiliatesTable();
+      setTimeout(closeAffiliateModal, 800);
+    } catch (err) {
+      console.error(err);
+      resultBox.textContent = "Erreur.";
+      resultBox.style.color = "#f87171";
+    }
+  }
 
-    document.getElementById(`${userKey}ReferralLink`).textContent = linkRow ? linkRow.url : "—";
+  function closeAffiliateModal() {
+    document.getElementById("affiliateModal").classList.remove("active");
+  }
 
-    const byDay = {};
-    (sales || []).forEach((s) => {
-      const day = new Date(s.created_at).toLocaleDateString();
-      if (!byDay[day]) byDay[day] = { count: 0, earnings: 0 };
-      byDay[day].count += 1;
-      byDay[day].earnings += s.commission || 40;
-    });
+  // ===== Panneaux Noé / Raphaël (recherche par prénom exact, sans accent) =====
+  async function loadSpecialAffiliatePanel(prenom, containerId) {
+    const container = document.getElementById(containerId);
+    try {
+      const res = await fetch("/.netlify/functions/admin-list-affiliates", { method: "POST", headers: adminHeaders() });
+      if (!res.ok) return;
+      const { affiliates } = await res.json();
+      const match = affiliates.find((a) => a.prenom.toLowerCase() === prenom.toLowerCase());
 
-    const tbody = document.getElementById(`${userKey}AnalyticsBody`);
-    tbody.innerHTML = "";
-    Object.entries(byDay).forEach(([day, stats]) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${day}</td><td>${stats.count}</td><td>${stats.earnings}€</td>`;
-      tbody.appendChild(tr);
-    });
+      if (!match) {
+        container.innerHTML = `<p class="text-secondary">Aucun compte "${prenom}" trouvé. Crée-le d'abord dans l'onglet Admin avec ce prénom exact.</p>`;
+        return;
+      }
+
+      const dataRes = await fetch("/.netlify/functions/admin-get-affiliate-data", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({ affiliateId: match.id }),
+      });
+      const { affiliate, stats } = await dataRes.json();
+
+      container.innerHTML = `
+        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;">
+          <div class="card"><div class="text-secondary" style="font-size:13px;">Ventes</div><div style="font-size:24px; font-weight:800;">${stats.totalSales}</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:13px;">Gains</div><div style="font-size:24px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:13px;">Commission/vente</div><div style="font-size:24px; font-weight:800;" class="gradient-text">${affiliate.commission_amount}€</div></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="field-inline"><label>Lien Roulette</label>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <input type="text" id="${containerId}-roulette" value="${affiliate.link_roulette}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
+              <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-roulette').value)">Copier</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="field-inline"><label>Lien Direct</label>
+            <div style="display:flex; gap:8px; margin-top:6px;">
+              <input type="text" id="${containerId}-direct" value="${affiliate.link_direct}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
+              <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-direct').value)">Copier</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="${containerId}-save">Enregistrer mes liens</button>
+        <div id="${containerId}-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+      `;
+
+      document.getElementById(`${containerId}-save`).addEventListener("click", async () => {
+        const linkRoulette = document.getElementById(`${containerId}-roulette`).value.trim();
+        const linkDirect = document.getElementById(`${containerId}-direct`).value.trim();
+        const resultBox = document.getElementById(`${containerId}-result`);
+
+        const saveRes = await fetch("/.netlify/functions/admin-save-affiliate", {
+          method: "POST",
+          headers: adminHeaders(),
+          body: JSON.stringify({
+            id: affiliate.id,
+            prenom: affiliate.prenom,
+            linkRoulette,
+            linkDirect,
+            commissionAmount: affiliate.commission_amount,
+          }),
+        });
+
+        resultBox.textContent = saveRes.ok ? "Liens mis à jour ✔" : "Erreur lors de la mise à jour.";
+      });
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<p class="text-secondary">Erreur de chargement.</p>`;
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Si une session admin valide existe déjà (même onglet navigateur), on saute le gate
     if (sessionStorage.getItem(ADMIN_SESSION_KEY)) {
       showAdminContent();
     }
