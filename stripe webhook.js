@@ -57,13 +57,32 @@ exports.handler = async (event) => {
   }
 
   const session = stripeEvent.data.object;
+
+  // ===== FIABILITÉ 100% : double vérification avant toute action =====
+  // 1. La signature Stripe a déjà été vérifiée plus haut (constructEvent échoue sinon)
+  // 2. On vérifie explicitement que le paiement est bien marqué "payé" par Stripe
+  // 3. On revérifie le montant réellement encaissé (pas une valeur qu'on suppose)
+  // Si l'une de ces conditions ne colle pas, on n'enregistre rien et on ne notifie rien.
+  const MIN_AMOUNT_EUR = 20;
+  const amountPaidEur = session.amount_total ? session.amount_total / 100 : 0;
+  const isPaid = session.payment_status === "paid";
+
+  if (!isPaid) {
+    console.warn("Session reçue mais payment_status != paid, ignorée :", session.id);
+    return { statusCode: 200, body: "Ignored (not paid)" };
+  }
+
+  if (amountPaidEur < MIN_AMOUNT_EUR) {
+    console.warn(`Montant payé (${amountPaidEur}€) inférieur au minimum requis, ignoré :`, session.id);
+    return { statusCode: 200, body: "Ignored (amount below minimum)" };
+  }
+
   // Quand un client paie via un Stripe Payment Link, Stripe indique dans
   // l'événement QUEL Payment Link a été utilisé (session.payment_link).
   // C'est CE identifiant qui permet de retrouver l'affilié, pas une metadata
   // qu'on aurait créée nous-mêmes (le paiement se fait sur un lien Stripe
   // déjà existant, pas via une session créée par notre propre code).
   const stripePaymentLinkId = session.payment_link;
-  const amountPaidEur = session.amount_total ? session.amount_total / 100 : null;
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
