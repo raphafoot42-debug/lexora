@@ -8,8 +8,8 @@
    La clé "service_role" (SUPABASE_SERVICE_KEY) ne doit JAMAIS être
    exposée côté client : elle reste uniquement dans les Netlify Functions. */
 
-const SUPABASE_URL = "https://VOTRE-PROJET.supabase.co"; // à remplacer
-const SUPABASE_ANON_KEY = "VOTRE_CLE_ANON_PUBLIQUE"; // à remplacer
+const SUPABASE_URL = "https://eztncphrjbpvcutstvvz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Ow2A8ccvhpxPlC9X1E27yQ_SIWh--u7";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
