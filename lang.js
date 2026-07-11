@@ -8,18 +8,18 @@ const I18N = {
     "nav.login": "Connexion",
     "nav.signup": "S'inscrire",
 
-    "hero.badge_prefix": "Programme de",
-    "hero.badge_accent": "parrainage",
-    "hero.big_title": "Programme de parrainage",
+    "hero.badge_prefix": "Programme d'",
+    "hero.badge_accent": "affiliation",
+    "hero.big_title": "Programme d'affiliation",
     "hero.tagline": "Partage ton lien. Gagne 40€ par vente.",
     "hero.subtitle":
-      "Rejoins le programme de parrainage : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.",
+      "Rejoins le programme d'affiliation : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.",
     "hero.cta_primary": "Se connecter",
     "hero.cta_secondary": "Voir comment ça marche",
 
     "steps.title": "Comment ça marche",
     "steps.1.title": "1. Inscris-toi",
-    "steps.1.desc": "Crée ton compte en quelques secondes et reçois ton lien de parrainage personnel.",
+    "steps.1.desc": "Crée ton compte en quelques secondes et reçois ton lien d'affiliation personnel.",
     "steps.2.title": "2. Partage ton lien",
     "steps.2.desc": "Envoie ton lien à ton réseau, sur les réseaux sociaux, par message, où tu veux.",
     "steps.3.title": "3. Sois payé",
@@ -43,7 +43,7 @@ const I18N = {
     "referral.amount_label": "Par vente confirmée",
     "referral.amount_value": "40€",
     "referral.desc":
-      "Chaque personne qui achète via ton lien de parrainage te fait gagner 40€, versés manuellement après validation du paiement.",
+      "Chaque personne qui achète via ton lien d'affiliation te fait gagner 40€, versés manuellement après validation du paiement.",
 
     "footer.admin": "Admin",
 
