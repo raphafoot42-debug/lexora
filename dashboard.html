@@ -3,152 +3,34 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tableau de bord — Programme de parrainage</title>
+<title>Tableau de bord — Lexora</title>
 <link rel="stylesheet" href="themes.css" />
 <link rel="stylesheet" href="styles.css" />
 <style>
-  .dash-layout {
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    min-height: 100vh;
-  }
-  .sidebar {
-    border-right: 1px solid var(--card-border);
-    padding: 20px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-height: 100vh;
-  }
-  .sidebar-header {
-    padding: 6px 10px 16px;
-    border-bottom: 1px solid var(--card-border);
-    margin-bottom: 4px;
-  }
-  .sidebar-logo {
-    font-weight: 800;
-    font-size: 22px;
-    margin-bottom: 12px;
-  }
-  .sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    margin-top: auto;
-  }
-  .sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 12px;
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-  }
-  .sidebar-link:hover {
-    background: var(--card-bg);
-    color: var(--text-primary);
-  }
-  .sidebar-link.active {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border-color: var(--card-border);
-  }
-  .sidebar-link .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    flex-shrink: 0;
-  }
-  .sidebar-link.active .dot {
-    background: var(--accent-1);
-  }
-  .dash-main {
-    padding: 28px 40px;
-  }
-  .dash-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-bottom: 32px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--card-border);
-  }
-  .dash-view {
-    display: none;
-  }
-  .dash-view.active {
-    display: block;
-  }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  .stat-card .stat-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-  }
-  .stat-card .stat-value {
-    font-size: 28px;
-    font-weight: 800;
-  }
-  .period-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  .period-tab {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 600;
-    background: transparent;
-    border: 1px solid var(--card-border);
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-  .period-tab.active {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border-color: rgba(var(--accent-1-rgb), 0.4);
-  }
-  .link-box {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    background: var(--bg-2);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-sm);
-    font-family: monospace;
-    font-size: 14px;
-    word-break: break-all;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-  th, td {
-    text-align: left;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--card-border);
-  }
-  th {
-    color: var(--text-secondary);
-    font-weight: 600;
-    font-size: 13px;
-  }
+  .dash-layout { display: grid; grid-template-columns: 250px 1fr; min-height: 100vh; }
+  .sidebar { border-right: 1px solid var(--card-border); padding: 20px 14px; display: flex; flex-direction: column; gap: 20px; min-height: 100vh; }
+  .sidebar-header { padding: 6px 10px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 4px; }
+  .sidebar-logo { font-weight: 800; font-size: 22px; margin-bottom: 12px; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 3px; margin-top: auto; }
+  .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; }
+  .sidebar-link:hover { background: var(--card-bg); color: var(--text-primary); }
+  .sidebar-link.active { background: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); }
+  .sidebar-link .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .sidebar-link.active .dot { background: var(--accent-1); }
+  .dash-main { padding: 28px 40px; }
+  .dash-topbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); }
+  .dash-view { display: none; }
+  .dash-view.active { display: block; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .stat-card .stat-value { font-size: 28px; font-weight: 800; }
+  .link-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: var(--radius-sm); font-family: monospace; font-size: 13px; word-break: break-all; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--card-border); }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 13px; }
   @media (max-width: 900px) {
     .dash-layout { grid-template-columns: 1fr; }
-    .sidebar { display: flex; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--card-border); }
+    .sidebar { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--card-border); min-height: auto; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
@@ -177,7 +59,6 @@
 
 <div class="dash-layout">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo gradient-text">Lexora</div>
@@ -188,35 +69,19 @@
     </div>
     <nav class="sidebar-nav">
       <div class="sidebar-link active" data-view="overview"><span class="dot"></span><span data-i18n="dash.nav.overview">Vue d'ensemble</span></div>
-      <div class="sidebar-link" data-view="referral"><span class="dot"></span><span data-i18n="dash.nav.referral">Lien de parrainage</span></div>
+      <div class="sidebar-link" data-view="referral"><span class="dot"></span><span data-i18n="dash.nav.referral">Mes liens</span></div>
       <div class="sidebar-link" data-view="analytics"><span class="dot"></span><span data-i18n="dash.nav.analytics">Analyse</span></div>
-      <div class="sidebar-link" data-view="settings"><span class="dot"></span><span data-i18n="dash.nav.settings">Paramètres</span></div>
+      <div class="sidebar-link" id="logoutLink"><span class="dot"></span><span data-i18n="dash.settings.logout">Se déconnecter</span></div>
     </nav>
   </aside>
 
-  <!-- MAIN -->
   <main class="dash-main">
     <div class="dash-topbar">
       <div class="theme-dot-group" id="themeDotGroup"></div>
     </div>
 
-    <!-- VUE D'ENSEMBLE -->
     <section class="dash-view active" id="view-overview">
-      <div class="period-tabs">
-        <button class="period-tab active" data-period="7">7j</button>
-        <button class="period-tab" data-period="30">30j</button>
-        <button class="period-tab" data-period="90">90j</button>
-        <button class="period-tab" data-period="all">Tout</button>
-      </div>
       <div class="stats-grid">
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.visits">Visites</div>
-          <div class="stat-value" id="statVisits">—</div>
-        </div>
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.signups">Inscriptions</div>
-          <div class="stat-value" id="statSignups">—</div>
-        </div>
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
           <div class="stat-value" id="statSales">—</div>
@@ -225,21 +90,33 @@
           <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
           <div class="stat-value gradient-text" id="statEarnings">—</div>
         </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.commission">Commission par vente</div>
+          <div class="stat-value gradient-text" id="statCommission">—</div>
+        </div>
       </div>
     </section>
 
-    <!-- LIEN DE PARRAINAGE -->
     <section class="dash-view" id="view-referral">
-      <h2 style="font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="dash.referral.your_link">Ton lien de parrainage</h2>
-      <div class="link-box">
-        <span id="referralLinkText" style="flex:1;">—</span>
-        <button class="btn btn-primary" id="copyLinkBtn" data-i18n="dash.referral.copy">Copier</button>
+      <div class="card" style="margin-bottom: 16px;">
+        <h3 style="font-size:16px; font-weight:700;" data-i18n="dash.link.roulette_title">Lien Roulette</h3>
+        <p class="text-secondary" style="font-size:13px; margin-top:6px;" data-i18n="dash.link.roulette_desc">Ce lien affiche une roulette avec un bonus au client, pour mieux convertir.</p>
+        <div class="link-box">
+          <span id="linkRouletteText" style="flex:1;">—</span>
+          <button class="btn btn-primary" id="copyRouletteBtn" data-i18n="dash.referral.copy">Copier</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:16px; font-weight:700;" data-i18n="dash.link.direct_title">Lien Direct</h3>
+        <p class="text-secondary" style="font-size:13px; margin-top:6px;" data-i18n="dash.link.direct_desc">Ce lien envoie le client directement vers le paiement, sans étape supplémentaire.</p>
+        <div class="link-box">
+          <span id="linkDirectText" style="flex:1;">—</span>
+          <button class="btn btn-primary" id="copyDirectBtn" data-i18n="dash.referral.copy">Copier</button>
+        </div>
       </div>
     </section>
 
-    <!-- ANALYSE -->
     <section class="dash-view" id="view-analytics">
-      <h2 style="font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="dash.nav.analytics">Analyse</h2>
       <div class="card" style="padding:0; overflow:hidden;">
         <table>
           <thead>
@@ -249,45 +126,20 @@
               <th data-i18n="dash.analytics.earnings">Gains</th>
             </tr>
           </thead>
-          <tbody id="analyticsTableBody">
-            <!-- rempli en JS -->
-          </tbody>
+          <tbody id="analyticsTableBody"></tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- PARAMETRES -->
-    <section class="dash-view" id="view-settings">
-      <h2 style="font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="dash.nav.settings">Paramètres</h2>
-      <div class="card" style="max-width: 420px;">
-        <div class="field">
-          <label data-i18n="dash.settings.email">Email</label>
-          <input type="email" id="settingsEmail" disabled />
-        </div>
-        <div class="field">
-          <label data-i18n="dash.settings.change_password">Changer le mot de passe</label>
-          <input type="password" id="newPassword" placeholder="Nouveau mot de passe" minlength="6" />
-        </div>
-        <button class="btn btn-primary" id="updatePasswordBtn" style="width:100%; margin-bottom:12px;" data-i18n="dash.settings.change_password">Changer le mot de passe</button>
-        <button class="btn btn-outline" id="logoutBtn" style="width:100%;" data-i18n="dash.settings.logout">Se déconnecter</button>
       </div>
     </section>
 
   </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="lang.js"></script>
 <script src="decor.js"></script>
 <script>
-  // ---------- Thème ----------
   const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
   const THEME_STORAGE_KEY = "site_theme";
-
-  function getCurrentTheme() {
-    return localStorage.getItem(THEME_STORAGE_KEY) || "cyan";
-  }
+  function getCurrentTheme() { return localStorage.getItem(THEME_STORAGE_KEY) || "cyan"; }
   function setCurrentTheme(theme) {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
     document.documentElement.setAttribute("data-theme", theme);
@@ -301,10 +153,7 @@
   }
   function initThemeSelector() {
     const group = document.getElementById("themeDotGroup");
-    const dotColors = {
-      cyan: "#22d3ee", violet: "#a78bfa", emerald: "#34d399",
-      rose: "#fb7185", amber: "#fbbf24", indigo: "#818cf8",
-    };
+    const dotColors = { cyan:"#22d3ee", violet:"#a78bfa", emerald:"#34d399", rose:"#fb7185", amber:"#fbbf24", indigo:"#818cf8" };
     THEMES.forEach((theme) => {
       const dot = document.createElement("button");
       dot.className = "theme-dot";
@@ -317,11 +166,10 @@
     updateThemeDots();
   }
 
-  // ---------- Navigation sidebar ----------
   function initSidebarNav() {
-    document.querySelectorAll(".sidebar-link").forEach((link) => {
+    document.querySelectorAll(".sidebar-link[data-view]").forEach((link) => {
       link.addEventListener("click", () => {
-        document.querySelectorAll(".sidebar-link").forEach((l) => l.classList.remove("active"));
+        document.querySelectorAll(".sidebar-link[data-view]").forEach((l) => l.classList.remove("active"));
         document.querySelectorAll(".dash-view").forEach((v) => v.classList.remove("active"));
         link.classList.add("active");
         document.getElementById("view-" + link.getAttribute("data-view")).classList.add("active");
@@ -329,157 +177,83 @@
     });
   }
 
-  // ---------- Période stats ----------
-  let currentPeriod = "7";
-  function initPeriodTabs(profile) {
-    document.querySelectorAll(".period-tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll(".period-tab").forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        currentPeriod = tab.getAttribute("data-period");
-        loadStats(profile, currentPeriod);
-      });
-    });
-  }
-
-  // ---------- Chargement des données réelles depuis Supabase ----------
-  function periodSince(period) {
-    if (period === "all") return null;
-    const days = parseInt(period, 10);
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    return since.toISOString();
-  }
-
-  async function loadStats(profile, period) {
-    const since = periodSince(period);
-
-    // Ventes + gains
-    let salesQuery = supabaseClient.from("sales").select("*").eq("referrer_id", profile.id);
-    if (since) salesQuery = salesQuery.gte("created_at", since);
-    const { data: sales, error: salesError } = await salesQuery;
-
-    if (salesError) {
-      console.error("Erreur chargement ventes :", salesError);
-      return;
-    }
-
-    const totalSales = sales.length;
-    const totalEarnings = sales.reduce((sum, s) => sum + (s.commission || 40), 0);
-    document.getElementById("statSales").textContent = totalSales;
-    document.getElementById("statEarnings").textContent = totalEarnings + "€";
-
-    // Visites réelles (table visits)
-    let visitsQuery = supabaseClient.from("visits").select("*", { count: "exact", head: true }).eq("referrer_id", profile.id);
-    if (since) visitsQuery = visitsQuery.gte("created_at", since);
-    const { count: visitCount, error: visitsError } = await visitsQuery;
-
-    if (visitsError) {
-      console.error("Erreur chargement visites :", visitsError);
-    }
-    document.getElementById("statVisits").textContent = visitCount ?? 0;
-
-    // Inscriptions réelles (users.referred_by = mon id)
-    let signupsQuery = supabaseClient.from("users").select("*", { count: "exact", head: true }).eq("referred_by", profile.id);
-    if (since) signupsQuery = signupsQuery.gte("created_at", since);
-    const { count: signupCount, error: signupsError } = await signupsQuery;
-
-    if (signupsError) {
-      console.error("Erreur chargement inscriptions :", signupsError);
-    }
-    document.getElementById("statSignups").textContent = signupCount ?? 0;
-  }
-
-  async function loadReferralLink(profile) {
-    const { data: linkRow, error } = await supabaseClient
-      .from("referral_links")
-      .select("url")
-      .eq("assigned_to", profile.id)
-      .single();
-
-    const link = (!error && linkRow) ? linkRow.url : null;
-    document.getElementById("referralLinkText").textContent = link || "—";
-
-    document.getElementById("copyLinkBtn").addEventListener("click", async () => {
-      if (!link) return;
-      await navigator.clipboard.writeText(link);
-      const btn = document.getElementById("copyLinkBtn");
+  function setupCopyButton(btnId, textId) {
+    document.getElementById(btnId).addEventListener("click", async () => {
+      const text = document.getElementById(textId).textContent;
+      if (!text || text === "—") return;
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById(btnId);
       const original = t("dash.referral.copy");
       btn.textContent = t("dash.referral.copied");
       setTimeout(() => (btn.textContent = original), 1500);
     });
   }
 
-  async function loadAnalyticsTable(profile) {
-    const { data: sales, error } = await supabaseClient
-      .from("sales")
-      .select("*")
-      .eq("referrer_id", profile.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Erreur chargement historique :", error);
-      return;
-    }
-
-    // Regroupement par jour
-    const byDay = {};
-    sales.forEach((s) => {
-      const day = new Date(s.created_at).toLocaleDateString();
-      if (!byDay[day]) byDay[day] = { count: 0, earnings: 0 };
-      byDay[day].count += 1;
-      byDay[day].earnings += s.commission || 40;
-    });
-
-    const tbody = document.getElementById("analyticsTableBody");
-    tbody.innerHTML = "";
-    Object.entries(byDay).forEach(([day, stats]) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${day}</td><td>${stats.count}</td><td>${stats.earnings}€</td>`;
-      tbody.appendChild(tr);
-    });
-
-    if (Object.keys(byDay).length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3" class="text-muted" style="text-align:center; padding: 24px;">—</td></tr>`;
-    }
-  }
-
-  function loadSettings(profile) {
-    document.getElementById("settingsEmail").value = profile.email;
-  }
-
-  document.getElementById("updatePasswordBtn").addEventListener("click", async () => {
-    const newPassword = document.getElementById("newPassword").value;
-    if (!newPassword || newPassword.length < 6) return;
-
-    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-    if (error) {
-      console.error("Erreur changement mot de passe :", error);
-      alert(t("auth.error_generic"));
-      return;
-    }
-    document.getElementById("newPassword").value = "";
-    alert(t("dash.settings.change_password") + " ✔");
+  document.getElementById("logoutLink").addEventListener("click", () => {
+    localStorage.removeItem("affiliate_token");
+    window.location.href = "login.html";
   });
 
-  document.getElementById("logoutBtn").addEventListener("click", () => logout("index.html"));
+  async function loadDashboard() {
+    const token = localStorage.getItem("affiliate_token");
+    if (!token) {
+      window.location.href = "login.html";
+      return;
+    }
 
-  // ---------- Init ----------
-  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const res = await fetch("/.netlify/functions/affiliate-me", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        localStorage.removeItem("affiliate_token");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { affiliate, stats, sales } = await res.json();
+
+      document.getElementById("statSales").textContent = stats.totalSales;
+      document.getElementById("statEarnings").textContent = stats.totalEarnings + "€";
+      document.getElementById("statCommission").textContent = affiliate.commission_amount + "€";
+
+      document.getElementById("linkRouletteText").textContent = affiliate.link_roulette || "—";
+      document.getElementById("linkDirectText").textContent = affiliate.link_direct || "—";
+
+      const byDay = {};
+      sales.forEach((s) => {
+        const day = new Date(s.created_at).toLocaleDateString();
+        if (!byDay[day]) byDay[day] = { count: 0, earnings: 0 };
+        byDay[day].count += 1;
+        byDay[day].earnings += Number(s.commission || 0);
+      });
+
+      const tbody = document.getElementById("analyticsTableBody");
+      tbody.innerHTML = "";
+      Object.entries(byDay).forEach(([day, s]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${day}</td><td>${s.count}</td><td>${s.earnings}€</td>`;
+        tbody.appendChild(tr);
+      });
+      if (Object.keys(byDay).length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-muted" style="text-align:center; padding:24px;">—</td></tr>`;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
     initThemeSelector();
     initSidebarNav();
-
-    const session = await requireAuth("signup.html");
-    if (!session) return;
-
-    const profile = await getCurrentUserProfile();
-    if (!profile) return;
-
-    initPeriodTabs(profile);
-    loadStats(profile, currentPeriod);
-    loadReferralLink(profile);
-    loadAnalyticsTable(profile);
-    loadSettings(profile);
+    setupCopyButton("copyRouletteBtn", "linkRouletteText");
+    setupCopyButton("copyDirectBtn", "linkDirectText");
+    loadDashboard();
   });
 </script>
 
