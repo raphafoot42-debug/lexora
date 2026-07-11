@@ -11,27 +11,66 @@
   .sidebar { border-right: 1px solid var(--card-border); padding: 20px 14px; display: flex; flex-direction: column; gap: 20px; min-height: 100vh; }
   .sidebar-header { padding: 6px 10px 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 4px; }
   .sidebar-logo { font-weight: 800; font-size: 22px; margin-bottom: 12px; }
-  .sidebar-nav { display: flex; flex-direction: column; gap: 3px; margin-top: auto; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 3px; }
   .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; }
   .sidebar-link:hover { background: var(--card-bg); color: var(--text-primary); }
   .sidebar-link.active { background: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); }
   .sidebar-link .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
   .sidebar-link.active .dot { background: var(--accent-1); }
   .dash-main { padding: 28px 40px; }
-  .dash-topbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); }
+  .dash-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); }
   .dash-view { display: none; }
   .dash-view.active { display: block; }
-  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .dash-view-header { margin-bottom: 24px; }
+  .dash-view-title { font-size: 26px; font-weight: 800; }
+  .dash-view-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
-  .stat-card .stat-value { font-size: 28px; font-weight: 800; }
-  .link-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: var(--radius-sm); font-family: monospace; font-size: 13px; word-break: break-all; margin-top: 10px; }
+  .stat-card .stat-value { font-size: 26px; font-weight: 800; }
+
+  .chart-card { padding: 24px; margin-bottom: 28px; }
+  .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .chart-card-header h3 { font-size: 15px; font-weight: 700; }
+  .period-tabs { display: flex; gap: 4px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: 999px; padding: 3px; }
+  .period-tab { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; }
+  .period-tab.active { color: #05070d; background: linear-gradient(120deg, var(--accent-1), var(--accent-2)); }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 160px; }
+  .bar-chart .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar-chart .bar { width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--accent-1), var(--accent-2)); min-height: 2px; }
+  .bar-chart .bar-label { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+  .chart-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px 0; }
+
+  .link-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: var(--radius-sm); font-family: monospace; font-size: 13px; word-break: break-all; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--card-border); }
   th { color: var(--text-secondary); font-weight: 600; font-size: 13px; }
+  td .row-actions { display: flex; gap: 8px; }
+  td .row-actions .btn { padding: 8px 14px; font-size: 12px; }
+
+  .profile-card { max-width: 560px; padding: 32px; }
+  .profile-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--card-border); }
+  .profile-row:last-of-type { border-bottom: none; }
+  .profile-row .label { font-size: 13px; color: var(--text-secondary); }
+  .profile-row .value { font-size: 14px; font-weight: 600; }
+  .status-pill { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+  .status-pill.actif { color: #34d399; background: rgba(52, 211, 153, 0.12); }
+  .status-pill.suspendu { color: #f87171; background: rgba(248, 113, 113, 0.12); }
+  .profile-divider { height: 1px; background: var(--card-border); margin: 24px 0; }
+  .profile-form-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+  .profile-msg { font-size: 13px; margin-top: 4px; display: none; }
+  .profile-msg.visible { display: block; }
+  .profile-msg.success { color: #34d399; }
+  .profile-msg.error { color: #f87171; }
+  .logout-btn-wrap { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--card-border); }
+
   @media (max-width: 900px) {
     .dash-layout { grid-template-columns: 1fr; }
     .sidebar { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--card-border); min-height: auto; }
+    .sidebar-nav { flex-direction: row; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-main { padding: 20px; }
   }
 </style>
 </head>
@@ -68,55 +107,135 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <div class="sidebar-link active" data-view="overview"><span class="dot"></span><span data-i18n="dash.nav.overview">Vue d'ensemble</span></div>
+      <div class="sidebar-link active" data-view="dashboard"><span class="dot"></span><span data-i18n="dash.nav.dashboard">Dashboard</span></div>
       <div class="sidebar-link" data-view="referral"><span class="dot"></span><span data-i18n="dash.nav.referral">Mes liens</span></div>
-      <div class="sidebar-link" data-view="analytics"><span class="dot"></span><span data-i18n="dash.nav.analytics">Analyse</span></div>
-      <div class="sidebar-link" id="logoutLink"><span class="dot"></span><span data-i18n="dash.settings.logout">Se déconnecter</span></div>
+      <div class="sidebar-link" data-view="report"><span class="dot"></span><span data-i18n="dash.nav.report">Report</span></div>
+      <div class="sidebar-link" data-view="profile"><span class="dot"></span><span data-i18n="dash.nav.profile">Mon profil</span></div>
     </nav>
   </aside>
 
   <main class="dash-main">
     <div class="dash-topbar">
+      <div></div>
       <div class="theme-dot-group" id="themeDotGroup"></div>
     </div>
 
-    <section class="dash-view active" id="view-overview">
+    <!-- ===== DASHBOARD ===== -->
+    <section class="dash-view active" id="view-dashboard">
+      <div class="dash-view-header">
+        <div class="dash-view-title gradient-text" data-i18n="dash.dashboard.title">Dashboard</div>
+        <div class="dash-view-subtitle" data-i18n="dash.dashboard.subtitle">Vue d'ensemble</div>
+      </div>
+
       <div class="stats-grid">
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.visits">Visites</div>
+          <div class="stat-value" id="statVisits">—</div>
+        </div>
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
           <div class="stat-value" id="statSales">—</div>
         </div>
         <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.conversion">Taux de conversion</div>
+          <div class="stat-value" id="statConversion">—</div>
+        </div>
+        <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
           <div class="stat-value gradient-text" id="statEarnings">—</div>
         </div>
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.commission">Commission par vente</div>
-          <div class="stat-value gradient-text" id="statCommission">—</div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-card-header">
+          <h3 data-i18n="dash.dashboard.activity">Activité par jour</h3>
         </div>
+        <div id="dashboardChart"></div>
       </div>
     </section>
 
+    <!-- ===== MES LIENS ===== -->
     <section class="dash-view" id="view-referral">
-      <div class="card" style="margin-bottom: 16px;">
-        <h3 style="font-size:16px; font-weight:700;" data-i18n="dash.link.roulette_title">Lien Roulette</h3>
-        <p class="text-secondary" style="font-size:13px; margin-top:6px;" data-i18n="dash.link.roulette_desc">Ce lien affiche une roulette avec un bonus au client, pour mieux convertir.</p>
-        <div class="link-box">
-          <span id="linkRouletteText" style="flex:1;">—</span>
-          <button class="btn btn-primary" id="copyRouletteBtn" data-i18n="dash.referral.copy">Copier</button>
-        </div>
+      <div class="dash-view-header">
+        <div class="dash-view-title gradient-text" data-i18n="dash.nav.referral">Mes liens</div>
       </div>
-      <div class="card">
-        <h3 style="font-size:16px; font-weight:700;" data-i18n="dash.link.direct_title">Lien Direct</h3>
-        <p class="text-secondary" style="font-size:13px; margin-top:6px;" data-i18n="dash.link.direct_desc">Ce lien envoie le client directement vers le paiement, sans étape supplémentaire.</p>
-        <div class="link-box">
-          <span id="linkDirectText" style="flex:1;">—</span>
-          <button class="btn btn-primary" id="copyDirectBtn" data-i18n="dash.referral.copy">Copier</button>
-        </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="dash.links.table_link">Lien</th>
+              <th data-i18n="dash.links.table_desc">Description</th>
+              <th data-i18n="dash.links.table_actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-i18n="dash.link.roulette_title" style="font-weight:700;">Lien Roulette</td>
+              <td class="text-secondary" style="max-width:340px;">
+                <span data-i18n="dash.link.roulette_desc">Ce lien affiche une roulette avec un bonus au client, pour mieux convertir.</span>
+                <div class="link-box" style="margin-top:8px;"><span id="linkRouletteText" style="flex:1;">—</span></div>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-primary" id="copyRouletteBtn" data-i18n="dash.referral.copy">Copier</button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td data-i18n="dash.link.direct_title" style="font-weight:700;">Lien Direct</td>
+              <td class="text-secondary" style="max-width:340px;">
+                <span data-i18n="dash.link.direct_desc">Ce lien envoie le client directement vers le paiement, sans étape supplémentaire.</span>
+                <div class="link-box" style="margin-top:8px;"><span id="linkDirectText" style="flex:1;">—</span></div>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-primary" id="copyDirectBtn" data-i18n="dash.referral.copy">Copier</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
-    <section class="dash-view" id="view-analytics">
+    <!-- ===== REPORT ===== -->
+    <section class="dash-view" id="view-report">
+      <div class="dash-view-header">
+        <div class="dash-view-title gradient-text" data-i18n="dash.report.title">Report</div>
+        <div class="dash-view-subtitle" data-i18n="dash.report.subtitle">Le détail de ton activité</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.visits">Visites</div>
+          <div class="stat-value" id="reportStatVisits">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
+          <div class="stat-value" id="reportStatSales">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.conversion">Taux de conversion</div>
+          <div class="stat-value" id="reportStatConversion">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
+          <div class="stat-value gradient-text" id="reportStatEarnings">—</div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-card-header">
+          <h3 data-i18n="dash.dashboard.activity">Activité par jour</h3>
+          <div class="period-tabs" id="periodTabs">
+            <button class="period-tab" data-days="7">7j</button>
+            <button class="period-tab active" data-days="14">14j</button>
+            <button class="period-tab" data-days="30">30j</button>
+          </div>
+        </div>
+        <div id="reportChart"></div>
+      </div>
+
       <div class="card" style="padding:0; overflow:hidden;">
         <table>
           <thead>
@@ -128,6 +247,48 @@
           </thead>
           <tbody id="analyticsTableBody"></tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ===== MON PROFIL ===== -->
+    <section class="dash-view" id="view-profile">
+      <div class="dash-view-header">
+        <div class="dash-view-title gradient-text" data-i18n="dash.profile.title">Mon profil</div>
+      </div>
+
+      <div class="card profile-card">
+        <div class="profile-row">
+          <span class="label" data-i18n="dash.profile.firstname">Prénom</span>
+          <span class="value" id="profileFirstname">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="label" data-i18n="dash.profile.status">Statut</span>
+          <span class="value"><span class="status-pill" id="profileStatus">—</span></span>
+        </div>
+        <div class="profile-row">
+          <span class="label" data-i18n="dash.profile.commission">Commission par vente</span>
+          <span class="value" id="profileCommission">—</span>
+        </div>
+
+        <div class="profile-divider"></div>
+
+        <div class="profile-form-title" data-i18n="dash.profile.change_password">Changer de mot de passe</div>
+        <form id="passwordForm">
+          <div class="field">
+            <label data-i18n="dash.profile.new_password">Nouveau mot de passe</label>
+            <input type="password" id="newPassword" autocomplete="new-password" required />
+          </div>
+          <div class="field">
+            <label data-i18n="dash.profile.confirm_password">Confirmer le mot de passe</label>
+            <input type="password" id="confirmPassword" autocomplete="new-password" required />
+          </div>
+          <div id="profileMsg" class="profile-msg"></div>
+          <button type="submit" id="savePasswordBtn" class="btn btn-primary" data-i18n="dash.profile.save">Enregistrer</button>
+        </form>
+
+        <div class="logout-btn-wrap">
+          <button class="btn btn-outline" id="logoutLink" style="width:100%;" data-i18n="dash.settings.logout">Se déconnecter</button>
+        </div>
       </div>
     </section>
 
@@ -194,6 +355,149 @@
     window.location.href = "login.html";
   });
 
+  // ---------- Rendu d'un petit graphique en barres (visites vs ventes) ----------
+  function renderBarChart(containerEl, days) {
+    containerEl.innerHTML = "";
+    if (!days || days.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "chart-empty";
+      empty.textContent = t("dash.dashboard.nodata");
+      containerEl.appendChild(empty);
+      return;
+    }
+    const maxVal = Math.max(1, ...days.map((d) => Math.max(d.visits, d.sales)));
+    const wrap = document.createElement("div");
+    wrap.className = "bar-chart";
+    days.forEach((d) => {
+      const col = document.createElement("div");
+      col.className = "bar-col";
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const heightPct = Math.max(2, (d.sales > 0 ? d.sales : d.visits) / maxVal * 100);
+      bar.style.height = heightPct + "%";
+      bar.title = `${d.label} — ${d.visits} visite(s), ${d.sales} vente(s)`;
+      const label = document.createElement("div");
+      label.className = "bar-label";
+      label.textContent = d.label;
+      col.appendChild(bar);
+      col.appendChild(label);
+      wrap.appendChild(col);
+    });
+    containerEl.appendChild(wrap);
+  }
+
+  // Construit un tableau de N derniers jours (avec 0 par défaut) à partir de
+  // listes brutes de visites et de ventes (chacune avec un champ date optionnel).
+  function buildDailySeries(visitsRaw, salesRaw, numDays) {
+    const days = [];
+    const today = new Date();
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      days.push({
+        key,
+        label: d.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" }),
+        visits: 0,
+        sales: 0,
+      });
+    }
+    const dayMap = {};
+    days.forEach((d) => (dayMap[d.key] = d));
+
+    (visitsRaw || []).forEach((v) => {
+      const raw = v.created_at || v.inserted_at || v.date;
+      if (!raw) return;
+      const key = new Date(raw).toISOString().slice(0, 10);
+      if (dayMap[key]) dayMap[key].visits += 1;
+    });
+    (salesRaw || []).forEach((s) => {
+      const raw = s.created_at || s.inserted_at || s.date;
+      if (!raw) return;
+      const key = new Date(raw).toISOString().slice(0, 10);
+      if (dayMap[key]) dayMap[key].sales += 1;
+    });
+
+    return days;
+  }
+
+  let cachedVisits = [];
+  let cachedSales = [];
+
+  function refreshReportChart(numDays) {
+    const days = buildDailySeries(cachedVisits, cachedSales, numDays);
+    renderBarChart(document.getElementById("reportChart"), days);
+  }
+
+  function initPeriodTabs() {
+    document.querySelectorAll(".period-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".period-tab").forEach((t2) => t2.classList.remove("active"));
+        tab.classList.add("active");
+        refreshReportChart(Number(tab.getAttribute("data-days")));
+      });
+    });
+  }
+
+  // ---------- Formulaire mot de passe ----------
+  function initPasswordForm() {
+    const form = document.getElementById("passwordForm");
+    const msg = document.getElementById("profileMsg");
+    const btn = document.getElementById("savePasswordBtn");
+
+    function showMsg(text, type) {
+      msg.textContent = text;
+      msg.className = "profile-msg visible " + type;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.className = "profile-msg";
+
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (newPassword.length < 6) {
+        showMsg(t("dash.profile.error_length"), "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showMsg(t("dash.profile.error_mismatch"), "error");
+        return;
+      }
+
+      const token = localStorage.getItem("affiliate_token");
+      btn.disabled = true;
+      const originalLabel = btn.textContent;
+      btn.textContent = t("dash.profile.saving");
+
+      try {
+        const res = await fetch("/.netlify/functions/affiliate-change-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ newPassword }),
+        });
+
+        if (!res.ok) {
+          showMsg(t("dash.profile.error_generic"), "error");
+          return;
+        }
+
+        showMsg(t("dash.profile.saved"), "success");
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        showMsg(t("dash.profile.error_generic"), "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
+    });
+  }
+
   async function loadDashboard() {
     const token = localStorage.getItem("affiliate_token");
     if (!token) {
@@ -216,18 +520,47 @@
         return;
       }
 
-      const { affiliate, stats, sales } = await res.json();
+      const { affiliate, stats, sales, visits } = await res.json();
 
-      document.getElementById("statSales").textContent = stats.totalSales;
-      document.getElementById("statEarnings").textContent = stats.totalEarnings + "€";
-      document.getElementById("statCommission").textContent = affiliate.commission_amount + "€";
+      cachedSales = sales || [];
+      cachedVisits = visits || [];
 
+      const totalSales = stats.totalSales;
+      const totalVisits = cachedVisits.length;
+      const conversion = totalVisits > 0 ? ((totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
+      const earnings = Number(stats.totalEarnings || 0).toFixed(2) + "€";
+
+      // Dashboard
+      document.getElementById("statVisits").textContent = totalVisits;
+      document.getElementById("statSales").textContent = totalSales;
+      document.getElementById("statConversion").textContent = conversion;
+      document.getElementById("statEarnings").textContent = earnings;
+      renderBarChart(document.getElementById("dashboardChart"), buildDailySeries(cachedVisits, cachedSales, 14));
+
+      // Report (mêmes chiffres pour l'instant, période ajustable via les onglets)
+      document.getElementById("reportStatVisits").textContent = totalVisits;
+      document.getElementById("reportStatSales").textContent = totalSales;
+      document.getElementById("reportStatConversion").textContent = conversion;
+      document.getElementById("reportStatEarnings").textContent = earnings;
+      refreshReportChart(14);
+
+      // Mes liens
       document.getElementById("linkRouletteText").textContent = affiliate.link_roulette || "—";
       document.getElementById("linkDirectText").textContent = affiliate.link_direct || "—";
 
+      // Profil
+      document.getElementById("profileFirstname").textContent = affiliate.prenom || "—";
+      document.getElementById("profileCommission").textContent = affiliate.commission_amount + "€";
+      const statusEl = document.getElementById("profileStatus");
+      const isSuspended = affiliate.statut === "suspendu";
+      statusEl.textContent = isSuspended ? t("dash.profile.status_suspendu") : t("dash.profile.status_actif");
+      statusEl.className = "status-pill " + (isSuspended ? "suspendu" : "actif");
+
+      // Tableau détaillé (Report)
       const byDay = {};
-      sales.forEach((s) => {
-        const day = new Date(s.created_at).toLocaleDateString();
+      cachedSales.forEach((s) => {
+        const raw = s.created_at;
+        const day = raw ? new Date(raw).toLocaleDateString() : "—";
         if (!byDay[day]) byDay[day] = { count: 0, earnings: 0 };
         byDay[day].count += 1;
         byDay[day].earnings += Number(s.commission || 0);
@@ -237,7 +570,7 @@
       tbody.innerHTML = "";
       Object.entries(byDay).forEach(([day, s]) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${day}</td><td>${s.count}</td><td>${s.earnings}€</td>`;
+        tr.innerHTML = `<td>${day}</td><td>${s.count}</td><td>${s.earnings.toFixed(2)}€</td>`;
         tbody.appendChild(tr);
       });
       if (Object.keys(byDay).length === 0) {
@@ -251,6 +584,8 @@
   document.addEventListener("DOMContentLoaded", () => {
     initThemeSelector();
     initSidebarNav();
+    initPeriodTabs();
+    initPasswordForm();
     setupCopyButton("copyRouletteBtn", "linkRouletteText");
     setupCopyButton("copyDirectBtn", "linkDirectText");
     loadDashboard();
