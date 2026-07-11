@@ -59,7 +59,7 @@ img {
   display: grid;
 }
 
-/* ---------- Background décor (repris sur toutes les pages) ---------- */
+/* ---------- Background décor "premium" (aurora + grille + glow) ---------- */
 .bg-decor {
   position: fixed;
   inset: 0;
@@ -68,26 +68,129 @@ img {
   background: var(--bg-0);
 }
 
-.bg-decor::before {
-  content: "";
+/* Grille futuriste en fond, qui dérive lentement */
+.bg-grid {
   position: absolute;
-  top: -20%;
-  left: -10%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(var(--accent-1-rgb), 0.18), transparent 70%);
-  filter: blur(60px);
+  inset: -10%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 65% 55% at 50% 25%, black 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 65% 55% at 50% 25%, black 30%, transparent 78%);
+  animation: gridDrift 50s linear infinite;
 }
 
-.bg-decor::after {
+@keyframes gridDrift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 46px 46px, 46px 46px; }
+}
+
+/* Taches "aurora" qui respirent et dérivent doucement, couleur = thème actif */
+.bg-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+.bg-aurora-1 {
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(var(--accent-1-rgb), 0.55), transparent 70%);
+  animation: auroraMoveA 16s ease-in-out infinite;
+}
+
+.bg-aurora-2 {
+  width: 50vw;
+  height: 50vw;
+  max-width: 640px;
+  max-height: 640px;
+  bottom: -18%;
+  right: -12%;
+  background: radial-gradient(circle, rgba(var(--accent-2-rgb), 0.5), transparent 70%);
+  animation: auroraMoveB 20s ease-in-out infinite;
+}
+
+.bg-aurora-3 {
+  width: 38vw;
+  height: 38vw;
+  max-width: 480px;
+  max-height: 480px;
+  top: 42%;
+  left: 55%;
+  background: radial-gradient(circle, rgba(var(--accent-1-rgb), 0.3), transparent 70%);
+  animation: auroraMoveC 24s ease-in-out infinite;
+}
+
+@keyframes auroraMoveA {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  50% { transform: translate(6%, 8%) scale(1.15); opacity: 1; }
+}
+
+@keyframes auroraMoveB {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  50% { transform: translate(-7%, -6%) scale(1.1); opacity: 1; }
+}
+
+@keyframes auroraMoveC {
+  0%, 100% { transform: translate(0, 0) scale(0.9); opacity: 0.6; }
+  50% { transform: translate(-5%, 5%) scale(1.05); opacity: 0.9; }
+}
+
+/* Particules lumineuses discrètes (canvas rempli en JS via decor.js) */
+.bg-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ligne lumineuse qui pulse, à placer sous un titre ou en séparateur de section */
+.glow-line {
+  height: 2px;
+  width: 120px;
+  margin: 18px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent-1), var(--accent-2), transparent);
+  box-shadow: 0 0 18px rgba(var(--accent-1-rgb), 0.7), 0 0 40px rgba(var(--accent-2-rgb), 0.4);
+  animation: glowPulse 2.6s ease-in-out infinite;
+}
+
+.glow-line.glow-line-left {
+  margin: 18px 0 0;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.55; transform: scaleX(0.9); }
+  50% { opacity: 1; transform: scaleX(1.05); }
+}
+
+/* Halo lumineux discret qui pulse sous une carte au survol (en plus du hover existant) */
+.card {
+  position: relative;
+}
+
+.card::before {
   content: "";
   position: absolute;
-  bottom: -20%;
-  right: -10%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(circle, rgba(var(--accent-2-rgb), 0.18), transparent 70%);
-  filter: blur(60px);
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(var(--accent-1-rgb), 0), rgba(var(--accent-1-rgb), 0));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: background 0.3s ease;
+  pointer-events: none;
+}
+
+.card:hover::before {
+  background: linear-gradient(120deg, rgba(var(--accent-1-rgb), 0.6), rgba(var(--accent-2-rgb), 0.6));
 }
 
 /* ---------- Header / Nav ---------- */
