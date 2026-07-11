@@ -11,6 +11,18 @@
 
 <div class="bg-decor">
   <div class="bg-grid"></div>
+  <div class="bg-chevrons">
+    <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -20,20 L 220,500 L -20,980" />
+      <path d="M 40,0 L 300,500 L 40,1000" />
+      <path d="M 100,-20 L 380,500 L 100,1020" />
+      <path d="M 160,-40 L 460,500 L 160,1040" />
+      <path d="M 1020,20 L 780,500 L 1020,980" />
+      <path d="M 960,0 L 700,500 L 960,1000" />
+      <path d="M 900,-20 L 620,500 L 900,1020" />
+      <path d="M 840,-40 L 540,500 L 840,1040" />
+    </svg>
+  </div>
   <div class="bg-aurora bg-aurora-1"></div>
   <div class="bg-aurora bg-aurora-2"></div>
   <div class="bg-aurora bg-aurora-3"></div>
@@ -140,6 +152,40 @@
 
   const REF_STORAGE_KEY = "pending_referral_code";
 
+  async function claimReferralLink(newUser) {
+    if (!newUser) return;
+
+    // On tente jusqu'à 3 fois : si un autre utilisateur réserve le même lien
+    // exactement au même moment, la policy RLS bloque le "USING (assigned_to IS NULL)"
+    // et on retente avec un autre lien libre.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data: freeLinks, error: findError } = await supabaseClient
+        .from("referral_links")
+        .select("id")
+        .is("assigned_to", null)
+        .limit(1);
+
+      if (findError || !freeLinks || freeLinks.length === 0) {
+        console.warn("Aucun lien de parrainage disponible dans le pool.");
+        return;
+      }
+
+      const { data: updated, error: updateError } = await supabaseClient
+        .from("referral_links")
+        .update({ assigned_to: newUser.id })
+        .eq("id", freeLinks[0].id)
+        .is("assigned_to", null)
+        .select();
+
+      if (!updateError && updated && updated.length > 0) {
+        return; // lien réservé avec succès
+      }
+      // sinon, un autre utilisateur l'a pris entre-temps : on retente
+    }
+
+    console.warn("Impossible de réserver un lien après plusieurs tentatives.");
+  }
+
   async function linkSignupToReferrer(newUser) {
     if (!newUser) return;
     const refCode = localStorage.getItem(REF_STORAGE_KEY);
@@ -199,8 +245,10 @@
 
       // Si l'inscription vient de réussir, on relie le nouveau compte à son parrain
       // (le code a été mémorisé par index.html lors de la visite via ?ref=CODE)
+      // et on lui réserve automatiquement un lien de paiement Stripe libre dans le pool
       if (mode === "signup") {
         await linkSignupToReferrer(result.data.user);
+        await claimReferralLink(result.data.user);
       }
 
       // Succès : redirection vers le dashboard
