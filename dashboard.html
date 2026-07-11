@@ -157,6 +157,18 @@
 
 <div class="bg-decor">
   <div class="bg-grid"></div>
+  <div class="bg-chevrons">
+    <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -20,20 L 220,500 L -20,980" />
+      <path d="M 40,0 L 300,500 L 40,1000" />
+      <path d="M 100,-20 L 380,500 L 100,1020" />
+      <path d="M 160,-40 L 460,500 L 160,1040" />
+      <path d="M 1020,20 L 780,500 L 1020,980" />
+      <path d="M 960,0 L 700,500 L 960,1000" />
+      <path d="M 900,-20 L 620,500 L 900,1020" />
+      <path d="M 840,-40 L 540,500 L 840,1040" />
+    </svg>
+  </div>
   <div class="bg-aurora bg-aurora-1"></div>
   <div class="bg-aurora bg-aurora-2"></div>
   <div class="bg-aurora bg-aurora-3"></div>
@@ -379,11 +391,17 @@
   }
 
   async function loadReferralLink(profile) {
-    const baseUrl = window.location.origin + "/index.html";
-    const link = `${baseUrl}?ref=${profile.code_parrainage}`;
-    document.getElementById("referralLinkText").textContent = link;
+    const { data: linkRow, error } = await supabaseClient
+      .from("referral_links")
+      .select("url")
+      .eq("assigned_to", profile.id)
+      .single();
+
+    const link = (!error && linkRow) ? linkRow.url : null;
+    document.getElementById("referralLinkText").textContent = link || "—";
 
     document.getElementById("copyLinkBtn").addEventListener("click", async () => {
+      if (!link) return;
       await navigator.clipboard.writeText(link);
       const btn = document.getElementById("copyLinkBtn");
       const original = t("dash.referral.copy");
