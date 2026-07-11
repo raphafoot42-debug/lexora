@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cyan">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connexion — Lexora</title>
+<link rel="stylesheet" href="themes.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="bg-decor">
+  <div class="bg-grid"></div>
+  <div class="bg-chevrons">
+    <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -20,20 L 220,500 L -20,980" />
+      <path d="M 40,0 L 300,500 L 40,1000" />
+      <path d="M 100,-20 L 380,500 L 100,1020" />
+      <path d="M 160,-40 L 460,500 L 160,1040" />
+      <path d="M 1020,20 L 780,500 L 1020,980" />
+      <path d="M 960,0 L 700,500 L 960,1000" />
+      <path d="M 900,-20 L 620,500 L 900,1020" />
+      <path d="M 840,-40 L 540,500 L 840,1040" />
+    </svg>
+  </div>
+  <div class="bg-aurora bg-aurora-1"></div>
+  <div class="bg-aurora bg-aurora-2"></div>
+  <div class="bg-aurora bg-aurora-3"></div>
+  <canvas class="bg-particles"></canvas>
+</div>
+
+<header class="navbar">
+  <div class="container flex-between">
+    <div class="navbar-left">
+      <a href="index.html" class="logo gradient-text">Lexora</a>
+      <div class="lang-select">
+        <button class="lang-btn" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <div class="theme-dot-group" id="themeDotGroup"></div>
+    </div>
+  </div>
+</header>
+
+<section class="container flex-center" style="min-height: 80vh; padding: 40px 24px;">
+  <div class="card accent-glow" style="width: 100%; max-width: 420px; padding: 40px;">
+
+    <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 24px; text-align:center;" data-i18n="auth.login_title">Connexion</h1>
+
+    <form id="loginForm">
+      <div class="field">
+        <label data-i18n="auth.prenom">Prénom</label>
+        <input type="text" id="prenom" required autocomplete="username" />
+      </div>
+      <div class="field">
+        <label data-i18n="auth.password">Mot de passe</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+      </div>
+
+      <div id="errorMsg" class="error-msg"></div>
+
+      <button type="submit" id="submitBtn" class="btn btn-primary" style="width:100%; margin-top: 8px;" data-i18n="auth.login_btn">
+        Se connecter
+      </button>
+    </form>
+
+    <p class="text-muted" style="font-size: 13px; margin-top: 20px; text-align:center;" data-i18n="auth.no_signup">
+      Les comptes sont créés uniquement par l'administrateur.
+    </p>
+
+  </div>
+</section>
+
+<script src="lang.js"></script>
+<script src="decor.js"></script>
+<script>
+  const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
+  const THEME_STORAGE_KEY = "site_theme";
+  function getCurrentTheme() { return localStorage.getItem(THEME_STORAGE_KEY) || "cyan"; }
+  function setCurrentTheme(theme) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    updateThemeDots();
+  }
+  function updateThemeDots() {
+    const current = getCurrentTheme();
+    document.querySelectorAll(".theme-dot").forEach((dot) => {
+      dot.classList.toggle("active", dot.getAttribute("data-theme-value") === current);
+    });
+  }
+  function initThemeSelector() {
+    const group = document.getElementById("themeDotGroup");
+    const dotColors = { cyan:"#22d3ee", violet:"#a78bfa", emerald:"#34d399", rose:"#fb7185", amber:"#fbbf24", indigo:"#818cf8" };
+    THEMES.forEach((theme) => {
+      const dot = document.createElement("button");
+      dot.className = "theme-dot";
+      dot.setAttribute("data-theme-value", theme);
+      dot.style.background = dotColors[theme];
+      dot.addEventListener("click", () => setCurrentTheme(theme));
+      group.appendChild(dot);
+    });
+    document.documentElement.setAttribute("data-theme", getCurrentTheme());
+    updateThemeDots();
+  }
+
+  const errorMsg = document.getElementById("errorMsg");
+  const submitBtn = document.getElementById("submitBtn");
+
+  function showError(message) {
+    errorMsg.textContent = message;
+    errorMsg.classList.add("visible");
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.classList.remove("visible");
+    submitBtn.disabled = true;
+
+    const prenom = document.getElementById("prenom").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      const res = await fetch("/.netlify/functions/affiliate-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prenom, password }),
+      });
+
+      if (!res.ok) {
+        showError("Identifiants incorrects.");
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const { token } = await res.json();
+      localStorage.setItem("affiliate_token", token);
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      console.error(err);
+      showError("Erreur serveur, réessaie.");
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", initThemeSelector);
+</script>
+
+</body>
+</html>
