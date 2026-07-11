@@ -1,8 +1,8 @@
 /* ===== NETLIFY FUNCTION : admin-toggle-user.js ===== */
-/* Suspend ou réactive un compte utilisateur.
+/* Suspend ou réactive un compte affilié.
    Protégé par le token admin émis par admin-auth.js (jamais de check en dur).
    Utilise la clé service_role Supabase (jamais exposée côté client) pour
-   pouvoir modifier n'importe quelle ligne de "users", RLS ou pas.
+   pouvoir modifier n'importe quelle ligne de "affiliates", RLS ou pas.
 
    Variables d'environnement Netlify nécessaires :
    - ADMIN_TOKEN_SECRET     (même valeur que dans admin-auth.js, pour vérifier la signature)
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const { error } = await supabaseAdmin
-      .from("users")
+      .from("affiliates")
       .update({ statut: newStatus })
       .eq("id", userId);
 
