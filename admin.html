@@ -59,6 +59,18 @@
 
 <div class="bg-decor">
   <div class="bg-grid"></div>
+  <div class="bg-chevrons">
+    <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M -20,20 L 220,500 L -20,980" />
+      <path d="M 40,0 L 300,500 L 40,1000" />
+      <path d="M 100,-20 L 380,500 L 100,1020" />
+      <path d="M 160,-40 L 460,500 L 160,1040" />
+      <path d="M 1020,20 L 780,500 L 1020,980" />
+      <path d="M 960,0 L 700,500 L 960,1000" />
+      <path d="M 900,-20 L 620,500 L 900,1020" />
+      <path d="M 840,-40 L 540,500 L 840,1040" />
+    </svg>
+  </div>
   <div class="bg-aurora bg-aurora-1"></div>
   <div class="bg-aurora bg-aurora-2"></div>
   <div class="bg-aurora bg-aurora-3"></div>
@@ -105,11 +117,11 @@
     <!-- ===== ONGLET ADMIN ===== -->
     <section class="admin-panel active" id="panel-admin">
       <div class="card" style="margin-bottom: 24px;">
-        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px;" data-i18n="admin.add_link">Ajouter un lien au pool</h3>
-        <div style="display:flex; gap:12px;">
-          <input type="text" id="newLinkInput" placeholder="URL du lien Stripe" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text-primary); font-size:14px;" />
-          <button class="btn btn-primary" id="addLinkBtn">+</button>
-        </div>
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:8px;" data-i18n="admin.add_link">Ajouter des liens au pool</h3>
+        <p class="text-secondary" style="font-size:13px; margin-bottom:14px;">Colle un lien Stripe par ligne. L'ID Stripe de chaque lien est retrouvé automatiquement.</p>
+        <textarea id="newLinksTextarea" rows="5" placeholder="https://buy.stripe.com/xxxx1&#10;https://buy.stripe.com/xxxx2&#10;https://buy.stripe.com/xxxx3" style="width:100%; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text-primary); font-size:13px; font-family: monospace; resize: vertical; margin-bottom:12px;"></textarea>
+        <button class="btn btn-primary" id="addLinkBtn">Enregistrer les liens</button>
+        <div id="addLinkResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
       </div>
 
       <div class="card" style="padding:0; overflow:hidden;">
@@ -370,17 +382,42 @@
   }
 
   document.getElementById("addLinkBtn").addEventListener("click", async () => {
-    const url = document.getElementById("newLinkInput").value.trim();
-    if (!url) return;
+    const textarea = document.getElementById("newLinksTextarea");
+    const resultBox = document.getElementById("addLinkResult");
+    const urls = textarea.value.split("\n").map((u) => u.trim()).filter((u) => u.length > 0);
 
-    const { error } = await supabaseClient.from("referral_links").insert({ url, assigned: false });
-    if (error) {
-      console.error("Erreur ajout lien :", error);
-      alert("Erreur lors de l'ajout du lien.");
+    if (urls.length === 0) {
+      resultBox.textContent = "Colle au moins un lien.";
       return;
     }
-    document.getElementById("newLinkInput").value = "";
-    alert("Lien ajouté au pool ✔");
+
+    resultBox.textContent = "Enregistrement en cours...";
+
+    try {
+      const res = await fetch("/.netlify/functions/admin-add-link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionStorage.getItem(ADMIN_SESSION_KEY)}`,
+        },
+        body: JSON.stringify({ urls }),
+      });
+
+      if (!res.ok) throw new Error("Échec ajout des liens");
+
+      const { added, notFound } = await res.json();
+      textarea.value = "";
+
+      let message = `${added} lien(s) ajouté(s) au pool ✔`;
+      if (notFound && notFound.length > 0) {
+        message += `\n${notFound.length} lien(s) non reconnus par Stripe : ${notFound.join(", ")}`;
+      }
+      resultBox.textContent = message;
+      resultBox.style.whiteSpace = "pre-line";
+    } catch (err) {
+      console.error(err);
+      resultBox.textContent = "Erreur lors de l'ajout des liens.";
+    }
   });
 
   // ---------- Panneaux Noé / Raphaël (dashboard identique à un client) ----------
@@ -410,8 +447,13 @@
     document.getElementById(`${userKey}StatSales`).textContent = totalSales;
     document.getElementById(`${userKey}StatEarnings`).textContent = totalEarnings + "€";
 
-    const link = `${window.location.origin}/index.html?ref=${profile.code_parrainage}`;
-    document.getElementById(`${userKey}ReferralLink`).textContent = link;
+    const { data: linkRow } = await supabaseClient
+      .from("referral_links")
+      .select("url")
+      .eq("assigned_to", profile.id)
+      .single();
+
+    document.getElementById(`${userKey}ReferralLink`).textContent = linkRow ? linkRow.url : "—";
 
     const byDay = {};
     (sales || []).forEach((s) => {
