@@ -1,1 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cyan">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Programme de parrainage</title>
+<link rel="stylesheet" href="themes.css" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .admin-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .admin-tab {
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .admin-tab.active {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border-color: rgba(var(--accent-1-rgb), 0.4);
+  }
+  .admin-panel { display: none; }
+  .admin-panel.active { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--card-border); }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 13px; }
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status-active { background: rgba(52,211,153,0.15); color: #34d399; }
+  .status-suspended { background: rgba(248,113,113,0.15); color: #f87171; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
 
+  /* Réutilisation du layout dashboard pour les onglets Noé/Raphaël */
+  .dash-layout-mini { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
+  .sidebar-mini { display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size:14px; font-weight:500; cursor:pointer; }
+  .sidebar-link:hover { background: var(--card-bg); color: var(--text-primary); }
+  .sidebar-link.active { background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); }
+  .stats-grid { display:grid; grid-template-columns: repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card .stat-label { font-size:13px; color: var(--text-secondary); margin-bottom:8px; }
+  .stat-card .stat-value { font-size:24px; font-weight:800; }
+  .link-box { display:flex; align-items:center; gap:12px; padding:14px 16px; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); font-family: monospace; font-size:13px; word-break:break-all; }
+</style>
+</head>
+<body>
+
+<div class="bg-decor">
+  <div class="bg-grid"></div>
+  <div class="bg-aurora bg-aurora-1"></div>
+  <div class="bg-aurora bg-aurora-2"></div>
+  <div class="bg-aurora bg-aurora-3"></div>
+  <canvas class="bg-particles"></canvas>
+</div>
+
+<!-- ===== GATE MOT DE PASSE ADMIN ===== -->
+<section id="passwordGate" class="container flex-center" style="min-height: 100vh;">
+  <div class="card accent-glow" style="width:100%; max-width:380px; padding:40px;">
+    <h1 style="font-size:22px; font-weight:700; margin-bottom:20px; text-align:center;">Accès admin</h1>
+    <div class="field">
+      <label>Mot de passe admin</label>
+      <input type="password" id="adminPasswordInput" autocomplete="off" />
+    </div>
+    <div id="gateError" class="error-msg"></div>
+    <button class="btn btn-primary" id="gateSubmitBtn" style="width:100%; margin-top:8px;">Valider</button>
+  </div>
+</section>
+
+<!-- ===== CONTENU ADMIN (caché tant que non authentifié) ===== -->
+<div id="adminContent" style="display:none;">
+  <header class="navbar">
+    <div class="container flex-between">
+      <div class="navbar-left">
+        <div class="logo gradient-text">Lexora</div>
+        <div class="lang-select">
+          <button class="lang-btn" data-lang="fr">FR</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+      </div>
+      <div class="navbar-right">
+        <div class="theme-dot-group" id="themeDotGroup"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding: 32px 24px 80px;">
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="admin" data-i18n="admin.tab.admin">Admin</button>
+      <button class="admin-tab" data-tab="noe" data-i18n="admin.tab.noe">Noé</button>
+      <button class="admin-tab" data-tab="raphael" data-i18n="admin.tab.raphael">Raphaël</button>
+    </div>
+
+    <!-- ===== ONGLET ADMIN ===== -->
+    <section class="admin-panel active" id="panel-admin">
+      <div class="card" style="margin-bottom: 24px;">
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:16px;" data-i18n="admin.add_link">Ajouter un lien au pool</h3>
+        <div style="display:flex; gap:12px;">
+          <input type="text" id="newLinkInput" placeholder="URL du lien Stripe" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--text-primary); font-size:14px;" />
+          <button class="btn btn-primary" id="addLinkBtn">+</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="admin.users.email">Email</th>
+              <th data-i18n="admin.users.link">Lien attribué</th>
+              <th data-i18n="admin.users.status">Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- rempli en JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== ONGLET NOÉ ===== -->
+    <section class="admin-panel" id="panel-noe">
+      <div class="dash-layout-mini">
+        <aside class="sidebar-mini">
+          <div class="sidebar-link active" data-view="overview" data-user="noe" data-i18n="dash.nav.overview">Vue d'ensemble</div>
+          <div class="sidebar-link" data-view="referral" data-user="noe" data-i18n="dash.nav.referral">Lien de parrainage</div>
+          <div class="sidebar-link" data-view="analytics" data-user="noe" data-i18n="dash.nav.analytics">Analyse</div>
+        </aside>
+        <div>
+          <div class="mini-view active" id="noe-view-overview">
+            <div class="stats-grid">
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.visits">Visites</div><div class="stat-value" id="noeStatVisits">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.signups">Inscriptions</div><div class="stat-value" id="noeStatSignups">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.sales">Ventes</div><div class="stat-value" id="noeStatSales">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.earnings">Gains</div><div class="stat-value gradient-text" id="noeStatEarnings">—</div></div>
+            </div>
+          </div>
+          <div class="mini-view" id="noe-view-referral" style="display:none;">
+            <div class="link-box"><span id="noeReferralLink">—</span></div>
+          </div>
+          <div class="mini-view" id="noe-view-analytics" style="display:none;">
+            <div class="card" style="padding:0; overflow:hidden;">
+              <table>
+                <thead><tr><th data-i18n="dash.analytics.date">Date</th><th data-i18n="dash.analytics.sales">Ventes</th><th data-i18n="dash.analytics.earnings">Gains</th></tr></thead>
+                <tbody id="noeAnalyticsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ONGLET RAPHAËL ===== -->
+    <section class="admin-panel" id="panel-raphael">
+      <div class="dash-layout-mini">
+        <aside class="sidebar-mini">
+          <div class="sidebar-link active" data-view="overview" data-user="raphael" data-i18n="dash.nav.overview">Vue d'ensemble</div>
+          <div class="sidebar-link" data-view="referral" data-user="raphael" data-i18n="dash.nav.referral">Lien de parrainage</div>
+          <div class="sidebar-link" data-view="analytics" data-user="raphael" data-i18n="dash.nav.analytics">Analyse</div>
+        </aside>
+        <div>
+          <div class="mini-view active" id="raphael-view-overview">
+            <div class="stats-grid">
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.visits">Visites</div><div class="stat-value" id="raphaelStatVisits">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.signups">Inscriptions</div><div class="stat-value" id="raphaelStatSignups">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.sales">Ventes</div><div class="stat-value" id="raphaelStatSales">—</div></div>
+              <div class="card stat-card"><div class="stat-label" data-i18n="dash.stats.earnings">Gains</div><div class="stat-value gradient-text" id="raphaelStatEarnings">—</div></div>
+            </div>
+          </div>
+          <div class="mini-view" id="raphael-view-referral" style="display:none;">
+            <div class="link-box"><span id="raphaelReferralLink">—</span></div>
+          </div>
+          <div class="mini-view" id="raphael-view-analytics" style="display:none;">
+            <div class="card" style="padding:0; overflow:hidden;">
+              <table>
+                <thead><tr><th data-i18n="dash.analytics.date">Date</th><th data-i18n="dash.analytics.sales">Ventes</th><th data-i18n="dash.analytics.earnings">Gains</th></tr></thead>
+                <tbody id="raphaelAnalyticsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="lang.js"></script>
+<script src="decor.js"></script>
+<script>
+  // ---------- Thème ----------
+  const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
+  const THEME_STORAGE_KEY = "site_theme";
+  function getCurrentTheme() { return localStorage.getItem(THEME_STORAGE_KEY) || "cyan"; }
+  function setCurrentTheme(theme) {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    updateThemeDots();
+  }
+  function updateThemeDots() {
+    const current = getCurrentTheme();
+    document.querySelectorAll(".theme-dot").forEach((dot) => {
+      dot.classList.toggle("active", dot.getAttribute("data-theme-value") === current);
+    });
+  }
+  function initThemeSelector() {
+    const group = document.getElementById("themeDotGroup");
+    const dotColors = { cyan:"#22d3ee", violet:"#a78bfa", emerald:"#34d399", rose:"#fb7185", amber:"#fbbf24", indigo:"#818cf8" };
+    THEMES.forEach((theme) => {
+      const dot = document.createElement("button");
+      dot.className = "theme-dot";
+      dot.setAttribute("data-theme-value", theme);
+      dot.style.background = dotColors[theme];
+      dot.addEventListener("click", () => setCurrentTheme(theme));
+      group.appendChild(dot);
+    });
+    document.documentElement.setAttribute("data-theme", getCurrentTheme());
+    updateThemeDots();
+  }
+
+  // ---------- Gate mot de passe admin ----------
+  // Le mot de passe n'est JAMAIS vérifié côté client : on envoie la saisie
+  // à la Netlify Function admin-auth.js, qui compare avec la variable d'env ADMIN_PASSWORD.
+  const gateSubmitBtn = document.getElementById("gateSubmitBtn");
+  const gateError = document.getElementById("gateError");
+  const ADMIN_SESSION_KEY = "admin_authenticated";
+
+  async function submitAdminPassword() {
+    const password = document.getElementById("adminPasswordInput").value;
+    gateError.classList.remove("visible");
+    gateSubmitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/.netlify/functions/admin-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) {
+        gateError.textContent = "Mot de passe incorrect.";
+        gateError.classList.add("visible");
+        gateSubmitBtn.disabled = false;
+        return;
+      }
+
+      const { token } = await res.json();
+      // Le token est renvoyé par admin-auth.js et revalidé par chaque function
+      // admin sensible (ex: suspend-user.js) — jamais de check "en dur" côté front.
+      sessionStorage.setItem(ADMIN_SESSION_KEY, token);
+      showAdminContent();
+    } catch (err) {
+      console.error(err);
+      gateError.textContent = "Erreur serveur, réessaie.";
+      gateError.classList.add("visible");
+      gateSubmitBtn.disabled = false;
+    }
+  }
+
+  gateSubmitBtn.addEventListener("click", submitAdminPassword);
+  document.getElementById("adminPasswordInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitAdminPassword();
+  });
+
+  function showAdminContent() {
+    document.getElementById("passwordGate").style.display = "none";
+    document.getElementById("adminContent").style.display = "block";
+    initThemeSelector();
+    initAdminTabs();
+    loadUsersTable();
+    loadUserPanel("noe");
+    loadUserPanel("raphael");
+  }
+
+  // ---------- Onglets Admin / Noé / Raphaël ----------
+  function initAdminTabs() {
+    document.querySelectorAll(".admin-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".admin-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".admin-panel").forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".sidebar-link[data-user]").forEach((link) => {
+      link.addEventListener("click", () => {
+        const user = link.getAttribute("data-user");
+        const view = link.getAttribute("data-view");
+        document.querySelectorAll(`.sidebar-link[data-user="${user}"]`).forEach((l) => l.classList.remove("active"));
+        link.classList.add("active");
+        ["overview", "referral", "analytics"].forEach((v) => {
+          const el = document.getElementById(`${user}-view-${v}`);
+          if (el) el.style.display = v === view ? "block" : "none";
+        });
+      });
+    });
+  }
+
+  // ---------- Tableau utilisateurs (onglet Admin) ----------
+  async function loadUsersTable() {
+    const { data: users, error } = await supabaseClient
+      .from("users")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Erreur chargement utilisateurs :", error);
+      return;
+    }
+
+    const tbody = document.getElementById("usersTableBody");
+    tbody.innerHTML = "";
+
+    users.forEach((u) => {
+      const isActive = u.statut === "actif";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${u.email}</td>
+        <td style="font-family:monospace; font-size:12px;">${u.code_parrainage || "—"}</td>
+        <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
+        <td><button class="btn btn-outline btn-sm" data-user-id="${u.id}" data-current-status="${u.statut}">${isActive ? "Suspendre" : "Réactiver"}</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll("button[data-user-id]").forEach((btn) => {
+      btn.addEventListener("click", () => toggleUserStatus(btn));
+    });
+  }
+
+  async function toggleUserStatus(btn) {
+    const userId = btn.getAttribute("data-user-id");
+    const currentStatus = btn.getAttribute("data-current-status");
+    const newStatus = currentStatus === "actif" ? "suspendu" : "actif";
+    btn.disabled = true;
+
+    try {
+      // La bascule de statut passe par une Netlify Function protégée par le token admin,
+      // pas par un update direct côté client (évite qu'un utilisateur suspende un autre compte).
+      const res = await fetch("/.netlify/functions/admin-toggle-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sessionStorage.getItem(ADMIN_SESSION_KEY)}`,
+        },
+        body: JSON.stringify({ userId, newStatus }),
+      });
+
+      if (!res.ok) throw new Error("Échec mise à jour statut");
+      loadUsersTable();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la mise à jour du statut.");
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById("addLinkBtn").addEventListener("click", async () => {
+    const url = document.getElementById("newLinkInput").value.trim();
+    if (!url) return;
+
+    const { error } = await supabaseClient.from("referral_links").insert({ url, assigned: false });
+    if (error) {
+      console.error("Erreur ajout lien :", error);
+      alert("Erreur lors de l'ajout du lien.");
+      return;
+    }
+    document.getElementById("newLinkInput").value = "";
+    alert("Lien ajouté au pool ✔");
+  });
+
+  // ---------- Panneaux Noé / Raphaël (dashboard identique à un client) ----------
+  async function loadUserPanel(userKey) {
+    // userKey correspond à un email connu (ex: noe@... / raphael@...) — à ajuster
+    // selon les emails réels une fois les comptes créés.
+    const { data: profile, error } = await supabaseClient
+      .from("users")
+      .select("*")
+      .ilike("email", `%${userKey}%`)
+      .single();
+
+    if (error || !profile) {
+      console.warn(`Profil ${userKey} introuvable pour l'instant.`);
+      return;
+    }
+
+    const { data: sales } = await supabaseClient.from("sales").select("*").eq("referrer_id", profile.id);
+    const { count: visitCount } = await supabaseClient.from("visits").select("*", { count: "exact", head: true }).eq("referrer_id", profile.id);
+    const { count: signupCount } = await supabaseClient.from("users").select("*", { count: "exact", head: true }).eq("referred_by", profile.id);
+
+    const totalSales = sales ? sales.length : 0;
+    const totalEarnings = sales ? sales.reduce((sum, s) => sum + (s.commission || 40), 0) : 0;
+
+    document.getElementById(`${userKey}StatVisits`).textContent = visitCount ?? 0;
+    document.getElementById(`${userKey}StatSignups`).textContent = signupCount ?? 0;
+    document.getElementById(`${userKey}StatSales`).textContent = totalSales;
+    document.getElementById(`${userKey}StatEarnings`).textContent = totalEarnings + "€";
+
+    const link = `${window.location.origin}/index.html?ref=${profile.code_parrainage}`;
+    document.getElementById(`${userKey}ReferralLink`).textContent = link;
+
+    const byDay = {};
+    (sales || []).forEach((s) => {
+      const day = new Date(s.created_at).toLocaleDateString();
+      if (!byDay[day]) byDay[day] = { count: 0, earnings: 0 };
+      byDay[day].count += 1;
+      byDay[day].earnings += s.commission || 40;
+    });
+
+    const tbody = document.getElementById(`${userKey}AnalyticsBody`);
+    tbody.innerHTML = "";
+    Object.entries(byDay).forEach(([day, stats]) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${day}</td><td>${stats.count}</td><td>${stats.earnings}€</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Si une session admin valide existe déjà (même onglet navigateur), on saute le gate
+    if (sessionStorage.getItem(ADMIN_SESSION_KEY)) {
+      showAdminContent();
+    }
+  });
+</script>
+
+</body>
+</html>
