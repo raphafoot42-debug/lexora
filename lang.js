@@ -8,8 +8,10 @@ const I18N = {
     "nav.login": "Connexion",
     "nav.signup": "S'inscrire",
 
-    "hero.badge": "Programme de parrainage",
-    "hero.title": "Partage ton lien. Gagne 40€ par vente.",
+    "hero.badge_prefix": "Programme de",
+    "hero.badge_accent": "parrainage",
+    "hero.big_title": "Programme de parrainage",
+    "hero.tagline": "Partage ton lien. Gagne 40€ par vente.",
     "hero.subtitle":
       "Rejoins le programme de parrainage : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.",
     "hero.cta_primary": "Créer mon compte",
@@ -88,8 +90,10 @@ const I18N = {
     "nav.login": "Log in",
     "nav.signup": "Sign up",
 
-    "hero.badge": "Referral program",
-    "hero.title": "Share your link. Earn 40€ per sale.",
+    "hero.badge_prefix": "Referral",
+    "hero.badge_accent": "program",
+    "hero.big_title": "Referral program",
+    "hero.tagline": "Share your link. Earn 40€ per sale.",
     "hero.subtitle":
       "Join the referral program: share your personal link, and earn 40€ for every person who comes through you and completes a payment.",
     "hero.cta_primary": "Create my account",
