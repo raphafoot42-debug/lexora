@@ -1,7 +1,10 @@
 /* ===== NETLIFY FUNCTION : stripe-webhook.js ===== */
-/* Reçoit la confirmation de paiement Stripe (événement checkout.session.completed).
+/* Reçoit la confirmation de paiement Stripe (événement checkout.session.completed),
+   déclenché quand un client paie sur un Stripe Payment Link existant
+   (le paiement ne se fait pas sur notre site, mais directement chez Stripe).
    1. Vérifie la signature Stripe (sécurité, évite les faux webhooks)
-   2. Retrouve l'affilié via le code de parrainage mis en metadata par stripe-checkout.js
+   2. Retrouve l'affilié via l'ID du Payment Link utilisé (session.payment_link),
+      en cherchant dans referral_links quel affilié y est assigné
    3. Enregistre la vente dans "sales" avec commission FIXE = 40€
    4. Appelle notify.js pour prévenir ton pote par email
 
@@ -54,7 +57,12 @@ exports.handler = async (event) => {
   }
 
   const session = stripeEvent.data.object;
-  const referralCode = session.metadata && session.metadata.referral_code;
+  // Quand un client paie via un Stripe Payment Link, Stripe indique dans
+  // l'événement QUEL Payment Link a été utilisé (session.payment_link).
+  // C'est CE identifiant qui permet de retrouver l'affilié, pas une metadata
+  // qu'on aurait créée nous-mêmes (le paiement se fait sur un lien Stripe
+  // déjà existant, pas via une session créée par notre propre code).
+  const stripePaymentLinkId = session.payment_link;
   const amountPaidEur = session.amount_total ? session.amount_total / 100 : null;
 
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -62,17 +70,23 @@ exports.handler = async (event) => {
   try {
     let referrer = null;
 
-    if (referralCode) {
-      const { data, error } = await supabaseAdmin
-        .from("users")
-        .select("id, email, code_parrainage")
-        .eq("code_parrainage", referralCode)
+    if (stripePaymentLinkId) {
+      const { data: linkRow, error: linkError } = await supabaseAdmin
+        .from("referral_links")
+        .select("assigned_to")
+        .eq("stripe_payment_link_id", stripePaymentLinkId)
         .single();
 
-      if (error) {
-        console.warn("Code de parrainage introuvable pour cette vente :", referralCode);
+      if (linkError || !linkRow || !linkRow.assigned_to) {
+        console.warn("Payment Link non assigné à un affilié :", stripePaymentLinkId);
       } else {
-        referrer = data;
+        const { data: userRow, error: userError } = await supabaseAdmin
+          .from("users")
+          .select("id, email, code_parrainage")
+          .eq("id", linkRow.assigned_to)
+          .single();
+
+        if (!userError) referrer = userRow;
       }
     }
 
