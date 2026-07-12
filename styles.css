@@ -210,17 +210,6 @@ img {
     0 0 90px rgba(var(--accent-2-rgb), 0.25);
 }
 
-/* Sur petit écran, un blur aussi large que 90px devient énorme par rapport
-   au texte et donne une impression de flou/bavure : on réduit les rayons. */
-@media (max-width: 768px) {
-  .neon-glow {
-    text-shadow:
-      0 0 4px rgba(var(--accent-1-rgb), 0.7),
-      0 0 10px rgba(var(--accent-1-rgb), 0.45),
-      0 0 18px rgba(var(--accent-2-rgb), 0.3);
-  }
-}
-
 /* Reflet flouté sous un titre néon, façon miroir qui s'estompe */
 .neon-reflect {
   transform: scaleY(-1);
@@ -285,6 +274,48 @@ img {
   background: linear-gradient(90deg, transparent, rgba(var(--accent-1-rgb), 0.55), transparent);
   opacity: 0.6;
   pointer-events: none;
+}
+
+/* ---------- Floutage de confidentialité (masque les mentions casino) ---------- */
+.privacy-toggle-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.privacy-toggle-btn:hover {
+  border-color: rgba(var(--accent-1-rgb), 0.5);
+  color: var(--text-primary);
+}
+
+.privacy-toggle-btn.active {
+  border-color: rgba(var(--accent-1-rgb), 0.6);
+  color: var(--accent-1);
+  background: rgba(var(--accent-1-rgb), 0.1);
+}
+
+body.privacy-mode .sensitive-blur {
+  filter: blur(6px);
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+
+.sensitive-blur {
+  transition: filter 0.15s ease;
 }
 
 /* ---------- Header / Nav ---------- */
