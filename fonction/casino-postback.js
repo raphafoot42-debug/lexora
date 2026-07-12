@@ -34,6 +34,7 @@ const { createClient } = require("@supabase/supabase-js");
 const MIN_AMOUNT_EUR = 20;
 const DEPOSIT_EVENTS = ["deposit", "ftd"];
 const VISIT_EVENTS = ["registration"];
+const MANAGER_POOL_TOTAL_EUR = 80; // cagnotte fixe par dépôt confirmé, répartie affilié + manager
 
 function rfc3986(str) {
   return encodeURIComponent(str).replace(/[!*'()]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
@@ -116,7 +117,7 @@ exports.handler = async (event) => {
     if (matchValue) {
       const { data, error } = await supabaseAdmin
         .from("affiliates")
-        .select("id, prenom, commission_amount, statut")
+        .select("id, prenom, commission_amount, statut, manager")
         .or(`tracking_slug_roulette.eq.${matchValue},tracking_slug_direct.eq.${matchValue}`)
         .maybeSingle();
 
@@ -173,6 +174,7 @@ exports.handler = async (event) => {
     }
 
     const commission = affiliate ? Number(affiliate.commission_amount) : 0;
+    const managerCommission = affiliate ? Math.max(MANAGER_POOL_TOTAL_EUR - commission, 0) : 0;
 
     const { data: sale, error: saleError } = await supabaseAdmin
       .from("sales")
@@ -180,6 +182,8 @@ exports.handler = async (event) => {
         affiliate_id: affiliate ? affiliate.id : null,
         amount: amountPaidEur,
         commission,
+        manager: affiliate ? affiliate.manager : null,
+        manager_commission: managerCommission,
         external_transaction_id: transactionId,
       })
       .select()
@@ -199,6 +203,7 @@ exports.handler = async (event) => {
           saleAmount: amountPaidEur,
           commission,
           saleId: sale.id,
+          toEmail: process.env.NOTIFY_TO_EMAIL, // notifications "côté Noé"
         }),
       });
     }
