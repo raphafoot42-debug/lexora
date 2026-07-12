@@ -82,13 +82,16 @@ exports.handler = async (event) => {
       return { statusCode: 401, body: "Unauthorized" };
     }
 
-    const { id, prenom, password, linkRoulette, linkDirect, commissionAmount } = JSON.parse(event.body);
+    const { id, prenom, password, linkRoulette, linkDirect, commissionAmount, manager } = JSON.parse(event.body);
 
     // Validation stricte : toutes les infos obligatoires doivent être présentes,
     // sauf le mot de passe qui est optionnel UNIQUEMENT en mode modification
     // (laisser vide = on ne change pas le mot de passe existant).
-    if (!prenom || !linkRoulette || !linkDirect || commissionAmount === undefined || commissionAmount === null) {
-      return { statusCode: 400, body: "Champs manquants (prenom, linkRoulette, linkDirect, commissionAmount requis)" };
+    if (!prenom || !linkRoulette || !linkDirect || commissionAmount === undefined || commissionAmount === null || !manager) {
+      return { statusCode: 400, body: "Champs manquants (prenom, linkRoulette, linkDirect, commissionAmount, manager requis)" };
+    }
+    if (!["noe", "raphael"].includes(manager)) {
+      return { statusCode: 400, body: "manager doit être 'noe' ou 'raphael'" };
     }
     if (!id && !password) {
       return { statusCode: 400, body: "Mot de passe requis pour créer un nouvel affilié" };
@@ -111,6 +114,7 @@ exports.handler = async (event) => {
       tracking_slug_roulette: trackingSlugRoulette,
       tracking_slug_direct: trackingSlugDirect,
       commission_amount: Number(commissionAmount),
+      manager,
     };
 
     if (password) {
