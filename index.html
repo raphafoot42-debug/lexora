@@ -71,54 +71,9 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
 <script src="lang.js"></script>
 <script src="decor.js"></script>
 <script>
-  // ---------- Tracking : visite via lien d'affiliation ----------
-  const REF_STORAGE_KEY = "pending_referral_code";
-
-  async function trackReferralVisit() {
-    const params = new URLSearchParams(window.location.search);
-    const refCode = params.get("ref");
-    if (!refCode) return;
-
-    // On garde le code en mémoire pour le relier à l'inscription plus tard
-    localStorage.setItem(REF_STORAGE_KEY, refCode);
-
-    // On évite de logger plusieurs fois la même visite dans la même session
-    const sessionKey = "visit_logged_" + refCode;
-    if (sessionStorage.getItem(sessionKey)) return;
-
-    try {
-      // On résout l'affilié à partir de son code pour stocker referrer_id
-      const { data: referrer, error: findError } = await supabaseClient
-        .from("users")
-        .select("id")
-        .eq("code_parrainage", refCode)
-        .single();
-
-      if (findError || !referrer) {
-        console.warn("Code d'affiliation inconnu :", refCode);
-        return;
-      }
-
-      const { error: insertError } = await supabaseClient
-        .from("visits")
-        .insert({ referral_code: refCode, referrer_id: referrer.id });
-
-      if (insertError) {
-        console.error("Erreur enregistrement visite :", insertError);
-        return;
-      }
-
-      sessionStorage.setItem(sessionKey, "1");
-    } catch (err) {
-      console.error("Erreur tracking visite :", err);
-    }
-  }
-
   // ---------- Thème ----------
   const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
   const THEME_STORAGE_KEY = "site_theme";
@@ -160,7 +115,6 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     initThemeSelector();
-    trackReferralVisit();
   });
 </script>
 
