@@ -81,7 +81,7 @@ exports.handler = async (event) => {
     if (stripePaymentLinkId) {
       const { data, error } = await supabaseAdmin
         .from("affiliates")
-        .select("id, prenom, commission_amount, statut")
+        .select("id, prenom, commission_amount, statut, manager")
         .or(`stripe_link_id_roulette.eq.${stripePaymentLinkId},stripe_link_id_direct.eq.${stripePaymentLinkId}`)
         .single();
 
@@ -95,6 +95,8 @@ exports.handler = async (event) => {
     }
 
     const commission = affiliate ? Number(affiliate.commission_amount) : 0;
+    const MANAGER_POOL_TOTAL_EUR = 80;
+    const managerCommission = affiliate ? Math.max(MANAGER_POOL_TOTAL_EUR - commission, 0) : 0;
 
     const { data: sale, error: saleError } = await supabaseAdmin
       .from("sales")
@@ -102,6 +104,8 @@ exports.handler = async (event) => {
         affiliate_id: affiliate ? affiliate.id : null,
         amount: amountPaidEur,
         commission,
+        manager: affiliate ? affiliate.manager : null,
+        manager_commission: managerCommission,
         stripe_session_id: session.id,
       })
       .select()
