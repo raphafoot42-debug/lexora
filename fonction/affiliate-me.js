@@ -72,38 +72,29 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: "Compte suspendu" };
     }
 
-    // On ne trie plus en base (evite un 500 si la colonne de date change de nom) :
-    // le tri par date, quand il est utile, se fait côté front de façon défensive.
     const { data: sales, error: salesError } = await supabaseAdmin
       .from("sales")
       .select("*")
-      .eq("affiliate_id", affiliate.id);
+      .eq("affiliate_id", affiliate.id)
+      .order("created_at", { ascending: false });
 
     if (salesError) {
       console.error("Erreur chargement ventes :", salesError);
       return { statusCode: 500, body: "Failed to load sales" };
     }
 
+    const { data: visits, error: visitsError } = await supabaseAdmin
+      .from("visits")
+      .select("id, created_at, link_type")
+      .eq("affiliate_id", affiliate.id)
+      .order("created_at", { ascending: false });
+
+    if (visitsError) {
+      console.error("Erreur chargement visites :", visitsError);
+    }
+
     const totalSales = sales.length;
     const totalEarnings = sales.reduce((sum, s) => sum + Number(s.commission || 0), 0);
-
-    // Visites : utilisées uniquement pour les graphiques/taux de conversion du
-    // dashboard. Non bloquant — si la table ou la colonne diffère, on renvoie
-    // simplement un tableau vide plutôt que de faire échouer toute la requête.
-    let visits = [];
-    try {
-      const { data: visitsData, error: visitsError } = await supabaseAdmin
-        .from("visits")
-        .select("*")
-        .eq("referrer_id", affiliate.id);
-      if (!visitsError && visitsData) {
-        visits = visitsData;
-      } else if (visitsError) {
-        console.warn("Visites non disponibles :", visitsError.message);
-      }
-    } catch (visitsErr) {
-      console.warn("Erreur chargement visites (ignorée) :", visitsErr.message);
-    }
 
     return {
       statusCode: 200,
@@ -111,7 +102,7 @@ exports.handler = async (event) => {
         affiliate,
         stats: { totalSales, totalEarnings },
         sales,
-        visits,
+        visits: visits || [],
       }),
     };
   } catch (err) {
