@@ -1,9 +1,7 @@
 /* ===== NETLIFY FUNCTION : admin-stats.js ===== */
-/* Retourne les statistiques globales, tous affiliés confondus :
-   total des visites, total des ventes, total dû aux affiliés (commissions),
-   total encaissé par l'entreprise (montant des ventes moins commissions),
-   ainsi qu'une répartition jour par jour pour le graphique de la vue
-   d'ensemble admin.
+/* Statistiques globales, tous affiliés confondus, pour la vue d'ensemble
+   en haut de admin.html (visites, ventes, montant dû, revenu, graphique
+   par jour sur les 90 derniers jours).
    Protégé par le token admin.
 
    Variables d'environnement Netlify nécessaires :
@@ -35,8 +33,10 @@ function verifyToken(token, secret) {
   return payload;
 }
 
+const DAYS_WINDOW = 90;
+
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST" && event.httpMethod !== "GET") {
+  if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
@@ -58,73 +58,63 @@ exports.handler = async (event) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // Ventes : jamais de .order() ici pour ne pas dépendre d'une colonne de
-    // date qui pourrait manquer (cf. le bug déjà rencontré sur "sales").
-    const { data: sales, error: salesError } = await supabaseAdmin
-      .from("sales")
-      .select("*");
+    const since = new Date();
+    since.setDate(since.getDate() - DAYS_WINDOW);
 
-    if (salesError) {
-      console.error("Erreur chargement ventes (global) :", salesError);
-      return { statusCode: 500, body: "Failed to load sales" };
+    const [{ data: visits, error: visitsError }, { data: sales, error: salesError }] = await Promise.all([
+      supabaseAdmin.from("visits").select("created_at").gte("created_at", since.toISOString()),
+      supabaseAdmin.from("sales").select("created_at, amount, commission").gte("created_at", since.toISOString()),
+    ]);
+
+    if (visitsError || salesError) {
+      console.error("Erreur chargement stats globales :", visitsError || salesError);
+      return { statusCode: 500, body: "Failed to load stats" };
     }
 
-    // Visites : non bloquant, comme pour affiliate-me.js.
-    let visits = [];
-    try {
-      const { data: visitsData, error: visitsError } = await supabaseAdmin
-        .from("visits")
-        .select("*");
-      if (!visitsError && visitsData) {
-        visits = visitsData;
-      } else if (visitsError) {
-        console.warn("Visites non disponibles (global) :", visitsError.message);
-      }
-    } catch (visitsErr) {
-      console.warn("Erreur chargement visites (ignorée, global) :", visitsErr.message);
-    }
+    // Totaux (toutes périodes confondues, pas seulement la fenêtre de 90 jours,
+    // pour ne pas sous-compter les chiffres affichés en haut)
+    const { count: totalVisitsAllTime } = await supabaseAdmin
+      .from("visits")
+      .select("*", { count: "exact", head: true });
+    const { data: allSales } = await supabaseAdmin.from("sales").select("amount, commission");
 
-    const totalVisits = visits.length;
-    const totalSales = sales.length;
-    const totalOwed = sales.reduce((sum, s) => sum + Number(s.commission || 0), 0);
-    const totalRevenue = sales.reduce(
-      (sum, s) => sum + (Number(s.amount || 0) - Number(s.commission || 0)),
-      0
-    );
+    const totalSales = allSales ? allSales.length : 0;
+    const totalOwed = allSales ? allSales.reduce((sum, s) => sum + Number(s.commission || 0), 0) : 0;
+    const totalRevenue = allSales ? allSales.reduce((sum, s) => sum + Number(s.amount || 0), 0) : 0;
 
-    // Répartition par jour (utilisée pour le graphique à 4 métriques).
-    // Défensif : si created_at manque sur une ligne, elle est simplement
-    // ignorée du détail par jour (mais reste comptée dans les totaux ci-dessus).
+    // Série journalière sur la fenêtre de 90 jours (pour le graphique)
     const dayMap = {};
-    function ensureDay(key) {
-      if (!dayMap[key]) {
-        dayMap[key] = { date: key, visits: 0, sales: 0, owed: 0, revenue: 0 };
-      }
-      return dayMap[key];
+    for (let i = DAYS_WINDOW - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dayMap[key] = { date: key, visits: 0, sales: 0, owed: 0, revenue: 0 };
     }
-    visits.forEach((v) => {
-      const raw = v.created_at;
-      if (!raw) return;
-      const key = new Date(raw).toISOString().slice(0, 10);
-      ensureDay(key).visits += 1;
-    });
-    sales.forEach((s) => {
-      const raw = s.created_at;
-      if (!raw) return;
-      const key = new Date(raw).toISOString().slice(0, 10);
-      const day = ensureDay(key);
-      day.sales += 1;
-      day.owed += Number(s.commission || 0);
-      day.revenue += Number(s.amount || 0) - Number(s.commission || 0);
+
+    (visits || []).forEach((v) => {
+      const key = new Date(v.created_at).toISOString().slice(0, 10);
+      if (dayMap[key]) dayMap[key].visits += 1;
     });
 
-    const daily = Object.values(dayMap).sort((a, b) => (a.date < b.date ? -1 : 1));
+    (sales || []).forEach((s) => {
+      const key = new Date(s.created_at).toISOString().slice(0, 10);
+      if (dayMap[key]) {
+        dayMap[key].sales += 1;
+        dayMap[key].owed += Number(s.commission || 0);
+        dayMap[key].revenue += Number(s.amount || 0);
+      }
+    });
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        totals: { totalVisits, totalSales, totalOwed, totalRevenue },
-        daily,
+        totals: {
+          totalVisits: totalVisitsAllTime || 0,
+          totalSales,
+          totalOwed,
+          totalRevenue,
+        },
+        daily: Object.values(dayMap),
       }),
     };
   } catch (err) {
