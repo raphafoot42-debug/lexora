@@ -173,7 +173,7 @@
               <td data-i18n="dash.link.roulette_title" style="font-weight:700;">Lien Roulette</td>
               <td class="text-secondary" style="max-width:340px;">
                 <span data-i18n="dash.link.roulette_desc">Ce lien affiche une roulette avec un bonus au client, pour mieux convertir.</span>
-                <div class="link-box" style="margin-top:8px;"><span id="linkRouletteText" style="flex:1;">—</span></div>
+                <div class="link-box" style="margin-top:8px;"><span id="linkRouletteText" class="sensitive-blur" style="flex:1;">—</span></div>
               </td>
               <td>
                 <div class="row-actions">
@@ -185,7 +185,7 @@
               <td data-i18n="dash.link.direct_title" style="font-weight:700;">Lien Direct</td>
               <td class="text-secondary" style="max-width:340px;">
                 <span data-i18n="dash.link.direct_desc">Ce lien envoie le client directement vers le paiement, sans étape supplémentaire.</span>
-                <div class="link-box" style="margin-top:8px;"><span id="linkDirectText" style="flex:1;">—</span></div>
+                <div class="link-box" style="margin-top:8px;"><span id="linkDirectText" class="sensitive-blur" style="flex:1;">—</span></div>
               </td>
               <td>
                 <div class="row-actions">
@@ -297,6 +297,7 @@
 
 <script src="lang.js"></script>
 <script src="decor.js"></script>
+<script src="privacy.js"></script>
 <script>
   const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
   const THEME_STORAGE_KEY = "site_theme";
