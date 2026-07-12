@@ -16,7 +16,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { affiliatePrenom, saleAmount, commission, saleId } = JSON.parse(event.body);
+    const { affiliatePrenom, saleAmount, commission, saleId, toEmail } = JSON.parse(event.body);
 
     if (!affiliatePrenom || !saleId) {
       return { statusCode: 400, body: "Missing required fields (affiliatePrenom, saleId)" };
@@ -24,7 +24,9 @@ exports.handler = async (event) => {
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     const FROM_EMAIL = process.env.NOTIFY_FROM_EMAIL;
-    const TO_EMAIL = process.env.NOTIFY_TO_EMAIL;
+    // Si un email cible précis est fourni (côté Noé ou côté Raphaël), on l'utilise.
+    // Sinon on retombe sur l'adresse par défaut (compatibilité avec l'ancien flux Stripe).
+    const TO_EMAIL = toEmail || process.env.NOTIFY_TO_EMAIL;
 
     if (!RESEND_API_KEY || !FROM_EMAIL || !TO_EMAIL) {
       console.error("Variables d'environnement manquantes (RESEND_API_KEY / NOTIFY_FROM_EMAIL / NOTIFY_TO_EMAIL)");
