@@ -26,6 +26,32 @@
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:none; align-items:center; justify-content:center; padding:24px; }
   .modal-overlay.active { display:flex; }
   .modal-box { max-width: 640px; width:100%; max-height: 85vh; overflow-y:auto; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .stat-card .stat-value { font-size: 24px; font-weight: 800; }
+
+  .chart-card { padding: 24px; margin-bottom: 32px; }
+  .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .chart-card-header h3 { font-size: 15px; font-weight: 700; }
+  .metric-tabs { display: flex; gap: 4px; background: var(--bg-2); border: 1px solid var(--card-border); border-radius: 999px; padding: 3px; flex-wrap: wrap; }
+  .metric-tab { font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 999px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+  .metric-tab.active { color: #05070d; background: linear-gradient(120deg, var(--accent-1), var(--accent-2)); }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 160px; overflow-x: auto; }
+  .bar-chart .bar-col { flex: 1; min-width: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar-chart .bar { width: 100%; max-width: 22px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, var(--accent-1), var(--accent-2)); min-height: 2px; }
+  .bar-chart .bar-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; }
+  .chart-empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px 0; }
+
+  .section-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .section-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+  .mini-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .mini-tab { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); cursor: pointer; }
+  .mini-tab.active { background: var(--card-bg); color: var(--text-primary); border-color: rgba(var(--accent-1-rgb), 0.4); }
+  .mini-panel { display: none; }
+  .mini-panel.active { display: block; }
 </style>
 </head>
 <body>
@@ -79,6 +105,45 @@
   </header>
 
   <main class="container" style="padding: 32px 24px 80px;">
+
+    <!-- ===== VUE D'ENSEMBLE GLOBALE (tous affiliés confondus) ===== -->
+    <div style="margin-bottom: 40px;">
+      <div class="section-title gradient-text">Vue d'ensemble</div>
+      <div class="section-subtitle">Toutes les affiliations confondues</div>
+
+      <div class="stats-grid">
+        <div class="card stat-card">
+          <div class="stat-label">Total visites</div>
+          <div class="stat-value" id="globalStatVisits">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Total ventes</div>
+          <div class="stat-value" id="globalStatSales">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Total dû aux affiliés</div>
+          <div class="stat-value" id="globalStatOwed">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Total gagné</div>
+          <div class="stat-value gradient-text" id="globalStatRevenue">—</div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="chart-card-header">
+          <h3>Activité par jour</h3>
+          <div class="metric-tabs" id="globalMetricTabs">
+            <button class="metric-tab active" data-metric="visits">Visites</button>
+            <button class="metric-tab" data-metric="sales">Ventes</button>
+            <button class="metric-tab" data-metric="owed">Dû aux affiliés</button>
+            <button class="metric-tab" data-metric="revenue">Gains</button>
+          </div>
+        </div>
+        <div id="globalChart"></div>
+      </div>
+    </div>
+
     <div class="admin-tabs">
       <button class="admin-tab active" data-tab="admin">Admin</button>
       <button class="admin-tab" data-tab="noe">Noé</button>
@@ -224,11 +289,98 @@
     };
   }
 
+  // ===== Graphique en barres réutilisable (vue d'ensemble + mini-dashboards) =====
+  function renderBarChart(containerEl, days, valueKey, formatFn) {
+    containerEl.innerHTML = "";
+    if (!days || days.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "chart-empty";
+      empty.textContent = "Pas encore de données sur cette période.";
+      containerEl.appendChild(empty);
+      return;
+    }
+    const format = formatFn || ((v) => v);
+    const maxVal = Math.max(1, ...days.map((d) => d[valueKey]));
+    const wrap = document.createElement("div");
+    wrap.className = "bar-chart";
+    days.forEach((d) => {
+      const col = document.createElement("div");
+      col.className = "bar-col";
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const heightPct = Math.max(2, (d[valueKey] / maxVal) * 100);
+      bar.style.height = heightPct + "%";
+      const dateLabel = new Date(d.date).toLocaleDateString();
+      bar.title = `${dateLabel} — ${format(d[valueKey])}`;
+      const label = document.createElement("div");
+      label.className = "bar-label";
+      label.textContent = new Date(d.date).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
+      col.appendChild(bar);
+      col.appendChild(label);
+      wrap.appendChild(col);
+    });
+    containerEl.appendChild(wrap);
+  }
+
+  // Ne garde que les N derniers jours d'une série "daily" renvoyée par le back
+  function lastNDays(daily, n) {
+    if (!daily) return [];
+    return daily.slice(-n);
+  }
+
+  // ===== Vue d'ensemble globale =====
+  let cachedGlobalDaily = [];
+
+  async function loadGlobalStats() {
+    try {
+      const res = await fetch("/.netlify/functions/admin-stats", {
+        method: "POST",
+        headers: adminHeaders(),
+      });
+      if (!res.ok) return;
+
+      const { totals, daily } = await res.json();
+      cachedGlobalDaily = daily || [];
+
+      document.getElementById("globalStatVisits").textContent = totals.totalVisits;
+      document.getElementById("globalStatSales").textContent = totals.totalSales;
+      document.getElementById("globalStatOwed").textContent = totals.totalOwed.toFixed(2) + "€";
+      document.getElementById("globalStatRevenue").textContent = totals.totalRevenue.toFixed(2) + "€";
+
+      renderGlobalChart("visits");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function renderGlobalChart(metric) {
+    const days = lastNDays(cachedGlobalDaily, 30);
+    const formatters = {
+      visits: (v) => `${v} visite(s)`,
+      sales: (v) => `${v} vente(s)`,
+      owed: (v) => `${v.toFixed(2)}€ dû(s)`,
+      revenue: (v) => `${v.toFixed(2)}€ gagné(s)`,
+    };
+    renderBarChart(document.getElementById("globalChart"), days, metric, formatters[metric]);
+  }
+
+  function initGlobalMetricTabs() {
+    document.querySelectorAll("#globalMetricTabs .metric-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("#globalMetricTabs .metric-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        renderGlobalChart(tab.getAttribute("data-metric"));
+      });
+    });
+  }
+
   function showAdminContent() {
     document.getElementById("passwordGate").style.display = "none";
     document.getElementById("adminContent").style.display = "block";
     initThemeSelector();
     initAdminTabs();
+    initGlobalMetricTabs();
+    loadGlobalStats();
     loadAffiliatesTable();
     loadSpecialAffiliatePanel("noe", "noe-content");
     loadSpecialAffiliatePanel("raphael", "raphael-content");
@@ -496,7 +648,7 @@
     document.getElementById("affiliateModal").classList.remove("active");
   }
 
-  // ===== Panneaux Noé / Raphaël (recherche par prénom exact, sans accent) =====
+  // ===== Panneaux Noé / Raphaël : mini-dashboard complet (Dashboard / Mes liens / Profil) =====
   async function loadSpecialAffiliatePanel(prenom, containerId) {
     const container = document.getElementById(containerId);
     try {
@@ -515,38 +667,96 @@
         headers: adminHeaders(),
         body: JSON.stringify({ affiliateId: match.id }),
       });
-      const { affiliate, stats } = await dataRes.json();
+      const { affiliate, stats, sales, visits } = await dataRes.json();
+
+      const totalVisits = (visits || []).length;
+      const conversion = totalVisits > 0 ? ((stats.totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
 
       container.innerHTML = `
-        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;">
-          <div class="card"><div class="text-secondary" style="font-size:13px;">Ventes</div><div style="font-size:24px; font-weight:800;">${stats.totalSales}</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:13px;">Gains</div><div style="font-size:24px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:13px;">Commission/vente</div><div style="font-size:24px; font-weight:800;" class="gradient-text">${affiliate.commission_amount}€</div></div>
+        <div class="mini-tabs">
+          <button class="mini-tab active" data-mini="dashboard">Dashboard</button>
+          <button class="mini-tab" data-mini="links">Mes liens</button>
+          <button class="mini-tab" data-mini="profile">Profil</button>
         </div>
-        <div class="card" style="margin-bottom:14px;">
-          <div class="field-inline"><label>Lien Roulette</label>
-            <div style="display:flex; gap:8px; margin-top:6px;">
-              <input type="text" id="${containerId}-roulette" value="${affiliate.link_roulette}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
-              <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-roulette').value)">Copier</button>
-            </div>
+
+        <div class="mini-panel active" id="${containerId}-panel-dashboard">
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+            <div class="card stat-card"><div class="stat-label">Visites</div><div class="stat-value">${totalVisits}</div></div>
+            <div class="card stat-card"><div class="stat-label">Ventes</div><div class="stat-value">${stats.totalSales}</div></div>
+            <div class="card stat-card"><div class="stat-label">Taux de conversion</div><div class="stat-value">${conversion}</div></div>
+            <div class="card stat-card"><div class="stat-label">Gains</div><div class="stat-value gradient-text">${Number(stats.totalEarnings).toFixed(2)}€</div></div>
+          </div>
+          <div class="card chart-card">
+            <div class="chart-card-header"><h3>Activité par jour</h3></div>
+            <div id="${containerId}-chart"></div>
           </div>
         </div>
-        <div class="card" style="margin-bottom:14px;">
-          <div class="field-inline"><label>Lien Direct</label>
-            <div style="display:flex; gap:8px; margin-top:6px;">
-              <input type="text" id="${containerId}-direct" value="${affiliate.link_direct}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
-              <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-direct').value)">Copier</button>
+
+        <div class="mini-panel" id="${containerId}-panel-links">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="field-inline"><label>Lien Roulette</label>
+              <div style="display:flex; gap:8px; margin-top:6px;">
+                <input type="text" id="${containerId}-roulette" value="${affiliate.link_roulette}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
+                <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-roulette').value)">Copier</button>
+              </div>
             </div>
           </div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="field-inline"><label>Lien Direct</label>
+              <div style="display:flex; gap:8px; margin-top:6px;">
+                <input type="text" id="${containerId}-direct" value="${affiliate.link_direct}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
+                <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-direct').value)">Copier</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="${containerId}-save-links">Enregistrer mes liens</button>
+          <div id="${containerId}-links-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
         </div>
-        <button class="btn btn-primary" id="${containerId}-save">Enregistrer mes liens</button>
-        <div id="${containerId}-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+
+        <div class="mini-panel" id="${containerId}-panel-profile">
+          <div class="card" style="max-width:480px;">
+            <div class="form-grid">
+              <div class="field-inline"><label>Prénom</label><input type="text" id="${containerId}-prenom" value="${affiliate.prenom}" /></div>
+              <div class="field-inline"><label>Nouveau mot de passe (vide = inchangé)</label><input type="text" id="${containerId}-password" placeholder="Laisser vide pour ne pas changer" /></div>
+              <div class="field-inline"><label>Commission par vente (€)</label><input type="number" id="${containerId}-commission" value="${affiliate.commission_amount}" /></div>
+            </div>
+            <button class="btn btn-primary" id="${containerId}-save-profile">Enregistrer le profil</button>
+            <div id="${containerId}-profile-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+          </div>
+        </div>
       `;
 
-      document.getElementById(`${containerId}-save`).addEventListener("click", async () => {
+      // Rendu du graphique (14 derniers jours), défensif si les dates manquent
+      const dayMap = {};
+      const today = new Date();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        dayMap[key] = { date: key, visits: 0 };
+      }
+      (visits || []).forEach((v) => {
+        if (!v.created_at) return;
+        const key = new Date(v.created_at).toISOString().slice(0, 10);
+        if (dayMap[key]) dayMap[key].visits += 1;
+      });
+      renderBarChart(document.getElementById(`${containerId}-chart`), Object.values(dayMap), "visits", (v) => `${v} visite(s)`);
+
+      // Onglets internes du mini-dashboard
+      container.querySelectorAll(".mini-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          container.querySelectorAll(".mini-tab").forEach((t) => t.classList.remove("active"));
+          container.querySelectorAll(".mini-panel").forEach((p) => p.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(`${containerId}-panel-${tab.getAttribute("data-mini")}`).classList.add("active");
+        });
+      });
+
+      // Sauvegarde des liens
+      document.getElementById(`${containerId}-save-links`).addEventListener("click", async () => {
         const linkRoulette = document.getElementById(`${containerId}-roulette`).value.trim();
         const linkDirect = document.getElementById(`${containerId}-direct`).value.trim();
-        const resultBox = document.getElementById(`${containerId}-result`);
+        const resultBox = document.getElementById(`${containerId}-links-result`);
 
         const saveRes = await fetch("/.netlify/functions/admin-save-affiliate", {
           method: "POST",
@@ -561,6 +771,46 @@
         });
 
         resultBox.textContent = saveRes.ok ? "Liens mis à jour ✔" : "Erreur lors de la mise à jour.";
+        resultBox.style.color = saveRes.ok ? "" : "#f87171";
+      });
+
+      // Sauvegarde du profil (prénom / mot de passe / commission)
+      document.getElementById(`${containerId}-save-profile`).addEventListener("click", async () => {
+        const newPrenom = document.getElementById(`${containerId}-prenom`).value.trim();
+        const newPassword = document.getElementById(`${containerId}-password`).value.trim();
+        const newCommission = document.getElementById(`${containerId}-commission`).value.trim();
+        const resultBox = document.getElementById(`${containerId}-profile-result`);
+
+        if (!newPrenom || !newCommission) {
+          resultBox.textContent = "Prénom et commission sont obligatoires.";
+          resultBox.style.color = "#f87171";
+          return;
+        }
+
+        const body = {
+          id: affiliate.id,
+          prenom: newPrenom,
+          linkRoulette: affiliate.link_roulette,
+          linkDirect: affiliate.link_direct,
+          commissionAmount: newCommission,
+        };
+        if (newPassword) body.password = newPassword;
+
+        const saveRes = await fetch("/.netlify/functions/admin-save-affiliate", {
+          method: "POST",
+          headers: adminHeaders(),
+          body: JSON.stringify(body),
+        });
+
+        if (!saveRes.ok) {
+          resultBox.textContent = "Erreur lors de la mise à jour.";
+          resultBox.style.color = "#f87171";
+          return;
+        }
+
+        resultBox.style.color = "";
+        resultBox.textContent = "Profil mis à jour ✔";
+        loadAffiliatesTable();
       });
     } catch (err) {
       console.error(err);
