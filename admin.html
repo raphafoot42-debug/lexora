@@ -175,12 +175,21 @@
             <label>Commission par vente (€)</label>
             <input type="number" id="newCommission" placeholder="40" />
           </div>
+          <div class="field-inline">
+            <label>Géré par</label>
+            <select id="newManager" style="background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;">
+              <option value="">Choisir...</option>
+              <option value="noe">Noé</option>
+              <option value="raphael">Raphaël</option>
+            </select>
+          </div>
         </div>
         <button class="btn btn-primary" id="createAffiliateBtn">Enregistrer</button>
         <div id="createResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
       </div>
 
-      <div class="card" style="padding:0; overflow:hidden;">
+      <div class="card" style="padding:0; overflow:hidden; margin-bottom:20px;">
+        <div style="padding:16px 20px 0;"><h3 style="font-size:15px; font-weight:700;">Clients de Noé</h3></div>
         <table>
           <thead>
             <tr>
@@ -190,7 +199,22 @@
               <th></th>
             </tr>
           </thead>
-          <tbody id="affiliatesTableBody"></tbody>
+          <tbody id="affiliatesTableBody-noe"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:16px 20px 0;"><h3 style="font-size:15px; font-weight:700;">Clients de Raphaël</h3></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Prénom</th>
+              <th>Commission</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="affiliatesTableBody-raphael"></tbody>
         </table>
       </div>
     </section>
@@ -404,10 +428,11 @@
     const linkRoulette = document.getElementById("newLinkRoulette").value.trim();
     const linkDirect = document.getElementById("newLinkDirect").value.trim();
     const commissionAmount = document.getElementById("newCommission").value.trim();
+    const manager = document.getElementById("newManager").value;
     const resultBox = document.getElementById("createResult");
 
-    if (!prenom || !password || !linkRoulette || !linkDirect || !commissionAmount) {
-      resultBox.textContent = "Tous les champs sont obligatoires.";
+    if (!prenom || !password || !linkRoulette || !linkDirect || !commissionAmount || !manager) {
+      resultBox.textContent = "Tous les champs sont obligatoires (y compris \"Géré par\").";
       resultBox.style.color = "#f87171";
       return;
     }
@@ -419,7 +444,7 @@
       const res = await fetch("/.netlify/functions/admin-save-affiliate", {
         method: "POST",
         headers: adminHeaders(),
-        body: JSON.stringify({ prenom, password, linkRoulette, linkDirect, commissionAmount }),
+        body: JSON.stringify({ prenom, password, linkRoulette, linkDirect, commissionAmount, manager }),
       });
 
       if (!res.ok) {
@@ -435,6 +460,7 @@
       document.getElementById("newLinkRoulette").value = "";
       document.getElementById("newLinkDirect").value = "";
       document.getElementById("newCommission").value = "";
+      document.getElementById("newManager").value = "";
       loadAffiliatesTable();
     } catch (err) {
       console.error(err);
@@ -443,7 +469,24 @@
     }
   });
 
-  // ===== Tableau des affiliés =====
+  // ===== Tableaux des affiliés, séparés par manager =====
+  function renderAffiliateRow(a) {
+    const isActive = a.statut === "actif";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${a.prenom}</td>
+      <td>${a.commission_amount}€</td>
+      <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
+      <td style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" data-action="view" data-id="${a.id}">Voir dashboard</button>
+        <button class="btn btn-outline btn-sm" data-action="edit" data-id="${a.id}">Modifier</button>
+        <button class="btn btn-outline btn-sm" data-action="toggle" data-id="${a.id}" data-status="${a.statut}">${isActive ? "Suspendre" : "Réactiver"}</button>
+        <button class="btn btn-outline btn-sm" data-action="delete" data-id="${a.id}" style="color:#f87171;">Supprimer</button>
+      </td>
+    `;
+    return tr;
+  }
+
   async function loadAffiliatesTable() {
     try {
       const res = await fetch("/.netlify/functions/admin-list-affiliates", {
@@ -453,36 +496,37 @@
       if (!res.ok) return;
 
       const { affiliates } = await res.json();
-      const tbody = document.getElementById("affiliatesTableBody");
-      tbody.innerHTML = "";
+      const tbodyNoe = document.getElementById("affiliatesTableBody-noe");
+      const tbodyRaphael = document.getElementById("affiliatesTableBody-raphael");
+      tbodyNoe.innerHTML = "";
+      tbodyRaphael.innerHTML = "";
 
       affiliates.forEach((a) => {
-        const isActive = a.statut === "actif";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${a.prenom}</td>
-          <td>${a.commission_amount}€</td>
-          <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
-          <td style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" data-action="view" data-id="${a.id}">Voir dashboard</button>
-            <button class="btn btn-outline btn-sm" data-action="edit" data-id="${a.id}">Modifier</button>
-            <button class="btn btn-outline btn-sm" data-action="toggle" data-id="${a.id}" data-status="${a.statut}">${isActive ? "Suspendre" : "Réactiver"}</button>
-            <button class="btn btn-outline btn-sm" data-action="delete" data-id="${a.id}" style="color:#f87171;">Supprimer</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+        const row = renderAffiliateRow(a);
+        if (a.manager === "raphael") {
+          tbodyRaphael.appendChild(row);
+        } else {
+          tbodyNoe.appendChild(row);
+        }
       });
 
-      tbody.querySelectorAll("button[data-action='view']").forEach((btn) =>
+      if (!tbodyNoe.children.length) {
+        tbodyNoe.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Aucun client</td></tr>`;
+      }
+      if (!tbodyRaphael.children.length) {
+        tbodyRaphael.innerHTML = `<tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Aucun client</td></tr>`;
+      }
+
+      document.querySelectorAll("button[data-action='view']").forEach((btn) =>
         btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-id"), "view"))
       );
-      tbody.querySelectorAll("button[data-action='edit']").forEach((btn) =>
+      document.querySelectorAll("button[data-action='edit']").forEach((btn) =>
         btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-id"), "edit"))
       );
-      tbody.querySelectorAll("button[data-action='toggle']").forEach((btn) =>
+      document.querySelectorAll("button[data-action='toggle']").forEach((btn) =>
         btn.addEventListener("click", () => toggleAffiliateStatus(btn))
       );
-      tbody.querySelectorAll("button[data-action='delete']").forEach((btn) =>
+      document.querySelectorAll("button[data-action='delete']").forEach((btn) =>
         btn.addEventListener("click", () => deleteAffiliate(btn.getAttribute("data-id")))
       );
     } catch (err) {
@@ -594,6 +638,13 @@
           <div class="field-inline"><label>Lien Roulette</label><input type="text" id="editLinkRoulette" value="${affiliate.link_roulette}" /></div>
           <div class="field-inline"><label>Lien Direct</label><input type="text" id="editLinkDirect" value="${affiliate.link_direct}" /></div>
           <div class="field-inline"><label>Commission (€)</label><input type="number" id="editCommission" value="${affiliate.commission_amount}" /></div>
+          <div class="field-inline">
+            <label>Géré par</label>
+            <select id="editManager" style="background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;">
+              <option value="noe" ${affiliate.manager === "noe" ? "selected" : ""}>Noé</option>
+              <option value="raphael" ${affiliate.manager === "raphael" ? "selected" : ""}>Raphaël</option>
+            </select>
+          </div>
         </div>
         <button class="btn btn-primary" id="saveEditBtn">Enregistrer les modifications</button>
         <div id="editResult" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
@@ -609,16 +660,17 @@
     const linkRoulette = document.getElementById("editLinkRoulette").value.trim();
     const linkDirect = document.getElementById("editLinkDirect").value.trim();
     const commissionAmount = document.getElementById("editCommission").value.trim();
+    const manager = document.getElementById("editManager").value;
     const resultBox = document.getElementById("editResult");
 
-    if (!prenom || !linkRoulette || !linkDirect || !commissionAmount) {
+    if (!prenom || !linkRoulette || !linkDirect || !commissionAmount || !manager) {
       resultBox.textContent = "Tous les champs (sauf mot de passe) sont obligatoires.";
       resultBox.style.color = "#f87171";
       return;
     }
 
     try {
-      const body = { id, prenom, linkRoulette, linkDirect, commissionAmount };
+      const body = { id, prenom, linkRoulette, linkDirect, commissionAmount, manager };
       if (password) body.password = password;
 
       const res = await fetch("/.netlify/functions/admin-save-affiliate", {
