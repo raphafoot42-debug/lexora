@@ -9,17 +9,17 @@ const I18N = {
     "nav.signup": "S'inscrire",
 
     "hero.badge_prefix": "Programme de",
-    "hero.badge_accent": "parrainage",
-    "hero.big_title": "Programme de parrainage",
+    "hero.badge_accent": "affiliation",
+    "hero.big_title": "Programme d'affiliation",
     "hero.tagline": "Partage ton lien. Gagne 40€ par vente.",
     "hero.subtitle":
-      "Rejoins le programme de parrainage : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.",
+      "Rejoins le programme d'affiliation : partage ton lien personnel, et touche 40€ à chaque personne qui passe par toi et valide un paiement.",
     "hero.cta_primary": "Se connecter",
     "hero.cta_secondary": "Voir comment ça marche",
 
     "steps.title": "Comment ça marche",
     "steps.1.title": "1. Inscris-toi",
-    "steps.1.desc": "Crée ton compte en quelques secondes et reçois ton lien de parrainage personnel.",
+    "steps.1.desc": "Crée ton compte en quelques secondes et reçois ton lien d'affiliation personnel.",
     "steps.2.title": "2. Partage ton lien",
     "steps.2.desc": "Envoie ton lien à ton réseau, sur les réseaux sociaux, par message, où tu veux.",
     "steps.3.title": "3. Sois payé",
@@ -43,7 +43,7 @@ const I18N = {
     "referral.amount_label": "Par vente confirmée",
     "referral.amount_value": "40€",
     "referral.desc":
-      "Chaque personne qui achète via ton lien de parrainage te fait gagner 40€, versés manuellement après validation du paiement.",
+      "Chaque personne qui achète via ton lien d'affiliation te fait gagner 40€, versés manuellement après validation du paiement.",
 
     "footer.admin": "Admin",
 
@@ -117,13 +117,13 @@ const I18N = {
     "hero.big_title": "Referral program",
     "hero.tagline": "Share your link. Earn 40€ per sale.",
     "hero.subtitle":
-      "Join the referral program: share your personal link, and earn 40€ for every person who comes through you and completes a payment.",
+      "Join the affiliate program: share your personal link, and earn 40€ for every person who comes through you and completes a payment.",
     "hero.cta_primary": "Log in",
     "hero.cta_secondary": "See how it works",
 
     "steps.title": "How it works",
     "steps.1.title": "1. Sign up",
-    "steps.1.desc": "Create your account in seconds and get your personal referral link.",
+    "steps.1.desc": "Create your account in seconds and get your personal affiliate link.",
     "steps.2.title": "2. Share your link",
     "steps.2.desc": "Send your link to your network, on social media, by message, wherever you want.",
     "steps.3.title": "3. Get paid",
@@ -147,7 +147,7 @@ const I18N = {
     "referral.amount_label": "Per confirmed sale",
     "referral.amount_value": "€40",
     "referral.desc":
-      "Everyone who buys through your referral link earns you 40€, paid manually after payment is confirmed.",
+      "Everyone who buys through your affiliate link earns you 40€, paid manually after payment is confirmed.",
 
     "footer.admin": "Admin",
 
