@@ -81,23 +81,18 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: "Failed to load sales" };
     }
 
+    const { data: visits, error: visitsError } = await supabaseAdmin
+      .from("visits")
+      .select("id, created_at, link_type")
+      .eq("affiliate_id", affiliateId)
+      .order("created_at", { ascending: false });
+
+    if (visitsError) {
+      console.error("Erreur chargement visites :", visitsError);
+    }
+
     const totalSales = sales.length;
     const totalEarnings = sales.reduce((sum, s) => sum + Number(s.commission || 0), 0);
-
-    let visits = [];
-    try {
-      const { data: visitsData, error: visitsError } = await supabaseAdmin
-        .from("visits")
-        .select("*")
-        .eq("referrer_id", affiliateId);
-      if (!visitsError && visitsData) {
-        visits = visitsData;
-      } else if (visitsError) {
-        console.warn("Visites non disponibles :", visitsError.message);
-      }
-    } catch (visitsErr) {
-      console.warn("Erreur chargement visites (ignorée) :", visitsErr.message);
-    }
 
     return {
       statusCode: 200,
@@ -105,7 +100,7 @@ exports.handler = async (event) => {
         affiliate,
         stats: { totalSales, totalEarnings },
         sales,
-        visits,
+        visits: visits || [],
       }),
     };
   } catch (err) {
