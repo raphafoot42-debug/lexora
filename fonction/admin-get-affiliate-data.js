@@ -84,12 +84,28 @@ exports.handler = async (event) => {
     const totalSales = sales.length;
     const totalEarnings = sales.reduce((sum, s) => sum + Number(s.commission || 0), 0);
 
+    let visits = [];
+    try {
+      const { data: visitsData, error: visitsError } = await supabaseAdmin
+        .from("visits")
+        .select("*")
+        .eq("referrer_id", affiliateId);
+      if (!visitsError && visitsData) {
+        visits = visitsData;
+      } else if (visitsError) {
+        console.warn("Visites non disponibles :", visitsError.message);
+      }
+    } catch (visitsErr) {
+      console.warn("Erreur chargement visites (ignorée) :", visitsErr.message);
+    }
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         affiliate,
         stats: { totalSales, totalEarnings },
         sales,
+        visits,
       }),
     };
   } catch (err) {
