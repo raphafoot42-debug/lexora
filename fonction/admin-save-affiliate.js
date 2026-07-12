@@ -36,12 +36,25 @@ function verifyToken(token, secret) {
 }
 
 // Essaie de retrouver l'ID Stripe d'un Payment Link à partir de son URL.
-// Si ça échoue (pas un vrai Payment Link Stripe, ex: page externe "roulette"), on ignore.
+// Si ça échoue (pas un vrai Payment Link Stripe, ex: lien BlueAffiliates), on ignore.
 async function resolveStripeLinkId(stripe, url) {
   try {
     const page = await stripe.paymentLinks.list({ limit: 100 });
     const match = page.data.find((link) => link.url === url);
     return match ? match.id : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Extrait le code court d'un lien BlueAffiliates (ex: "fFGJHaD6" dans
+// https://blue2affiliates.com/g/fFGJHaD6). C'est ce code qui revient dans
+// {campaign_slug} lors d'un postback, et qui permet d'identifier l'affilié.
+function extractTrackingSlug(url) {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : null;
   } catch (err) {
     return null;
   }
@@ -86,6 +99,8 @@ exports.handler = async (event) => {
 
     const stripeLinkIdRoulette = await resolveStripeLinkId(stripe, linkRoulette);
     const stripeLinkIdDirect = await resolveStripeLinkId(stripe, linkDirect);
+    const trackingSlugRoulette = extractTrackingSlug(linkRoulette);
+    const trackingSlugDirect = extractTrackingSlug(linkDirect);
 
     const row = {
       prenom,
@@ -93,6 +108,8 @@ exports.handler = async (event) => {
       link_direct: linkDirect,
       stripe_link_id_roulette: stripeLinkIdRoulette,
       stripe_link_id_direct: stripeLinkIdDirect,
+      tracking_slug_roulette: trackingSlugRoulette,
+      tracking_slug_direct: trackingSlugDirect,
       commission_amount: Number(commissionAmount),
     };
 
