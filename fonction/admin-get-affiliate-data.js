@@ -62,7 +62,7 @@ exports.handler = async (event) => {
 
     const { data: affiliate, error: profileError } = await supabaseAdmin
       .from("affiliates")
-      .select("id, prenom, link_roulette, link_direct, commission_amount, statut, created_at")
+      .select("id, prenom, link_roulette, link_direct, commission_amount, statut, manager, created_at")
       .eq("id", affiliateId)
       .single();
 
