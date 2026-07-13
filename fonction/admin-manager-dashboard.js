@@ -97,7 +97,7 @@ exports.handler = async (event) => {
 
     const { data: sales, error: salesError } = await supabaseAdmin
       .from("sales")
-      .select("created_at, manager_commission")
+      .select("created_at, commission, amount, manager_commission")
       .in("affiliate_id", clientIds);
 
     if (visitsError || salesError) {
@@ -107,6 +107,9 @@ exports.handler = async (event) => {
 
     const totalVisits = visits ? visits.length : 0;
     const totalSales = sales ? sales.length : 0;
+    // totalOwed = ce qu'on doit verser aux affiliés (commission), totalRevenue = ce que les clients ont payé (le "prix")
+    const totalOwed = sales ? sales.reduce((sum, s) => sum + Number(s.commission || 0), 0) : 0;
+    const totalRevenue = sales ? sales.reduce((sum, s) => sum + Number(s.amount || 0), 0) : 0;
     const totalEarnings = sales ? sales.reduce((sum, s) => sum + Number(s.manager_commission || 0), 0) : 0;
     const conversionRate = totalVisits > 0 ? (totalSales / totalVisits) * 100 : 0;
 
@@ -116,7 +119,7 @@ exports.handler = async (event) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      dayMap[key] = { date: key, visits: 0, sales: 0, earnings: 0 };
+      dayMap[key] = { date: key, visits: 0, sales: 0, owed: 0, revenue: 0, earnings: 0 };
     }
 
     (visits || []).forEach((v) => {
@@ -128,6 +131,8 @@ exports.handler = async (event) => {
       const key = new Date(s.created_at).toISOString().slice(0, 10);
       if (dayMap[key]) {
         dayMap[key].sales += 1;
+        dayMap[key].owed += Number(s.commission || 0);
+        dayMap[key].revenue += Number(s.amount || 0);
         dayMap[key].earnings += Number(s.manager_commission || 0);
       }
     });
@@ -136,7 +141,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         clients,
-        stats: { totalVisits, totalSales, totalEarnings, conversionRate },
+        stats: { totalVisits, totalSales, totalOwed, totalRevenue, totalEarnings, conversionRate, totalAffiliates: clients.length },
         daily: Object.values(dayMap),
       }),
     };
