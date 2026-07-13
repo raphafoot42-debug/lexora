@@ -119,13 +119,14 @@ exports.handler = async (event) => {
       if (existingVisit) {
         return { statusCode: 200, body: "OK (already processed)" };
       }
-
-      await supabaseAdmin.from("visits").insert({
-        affiliate_id: affiliate ? affiliate.id : null,
-        referral_code: matchValue || "unknown",
-        external_transaction_id: transactionId,
-        link_type: matchValue === (affiliate && affiliate.tracking_slug_direct) ? "direct" : "roulette",
-      });
+       
+await supabaseAdmin.from("visits").insert({                                                                                                                                                                                                                                                                                                                                              
+  affiliate_id: affiliate ? affiliate.id : null,
+  referral_code: matchValue || "unknown",
+  external_transaction_id: transactionId,
+  link_type: matchValue === (affiliate && affiliate.tracking_slug_direct) ? "direct" : "roulette",
+  source: "registration",              
+});
 
       return { statusCode: 200, body: "OK" };
     }
