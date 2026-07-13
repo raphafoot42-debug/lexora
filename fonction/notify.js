@@ -1,7 +1,8 @@
 /* ===== NETLIFY FUNCTION : notify.js ===== */
 /* Remplace l'ancien sms-notify.js.
    Envoie un EMAIL à ton pote via Resend (https://resend.com) au lieu d'un SMS.
-   Déclenché UNIQUEMENT par stripe-webhook.js après une vente confirmée.
+   Déclenché par casino-postback.js (et casino-postback-raphael.js une fois
+   branché) après une vente confirmée (dépôt validé côté BlueAffiliates).
    Ne fait AUCUN paiement automatique : c'est juste une notification.
 
    Variables d'environnement Netlify à ajouter :
