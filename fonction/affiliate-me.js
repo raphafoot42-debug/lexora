@@ -1,8 +1,6 @@
 /* ===== NETLIFY FUNCTION : affiliate-me.js ===== */
 /* Retourne le profil, les liens, les ventes et les stats de l'affilié
    actuellement connecté (via son token émis par affiliate-login.js).
-   Chaque affilié ne peut voir QUE ses propres données (vérifié via affiliateId
-   contenu dans le token, jamais fourni par le front).
 
    Variables d'environnement Netlify nécessaires :
    - ADMIN_TOKEN_SECRET
@@ -93,14 +91,21 @@ exports.handler = async (event) => {
       console.error("Erreur chargement visites :", visitsError);
     }
 
+    // FIX C : on renvoie aussi totalVisits + conversionRate (en % avec 1 décimale),
+    // pour que le front n'ait pas à les recalculer et que ces stats soient
+    // disponibles côté serveur (cohérence avec admin-manager-dashboard.js).
     const totalSales = sales.length;
     const totalEarnings = sales.reduce((sum, s) => sum + Number(s.commission || 0), 0);
+    const totalVisits = (visits || []).length;
+    const conversionRate = totalVisits > 0
+      ? Math.round((totalSales / totalVisits) * 1000) / 10
+      : 0;
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         affiliate,
-        stats: { totalSales, totalEarnings },
+        stats: { totalSales, totalEarnings, totalVisits, conversionRate },
         sales,
         visits: visits || [],
       }),
