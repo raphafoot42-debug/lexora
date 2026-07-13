@@ -129,10 +129,6 @@
 
       <div class="stats-grid">
         <div class="card stat-card">
-          <div class="stat-label">Total visites</div>
-          <div class="stat-value" id="globalStatVisits">—</div>
-        </div>
-        <div class="card stat-card">
           <div class="stat-label">Total ventes</div>
           <div class="stat-value" id="globalStatSales">—</div>
         </div>
@@ -150,8 +146,7 @@
         <div class="chart-card-header">
           <h3>Activité</h3>
           <div class="metric-tabs" id="globalMetricTabs">
-            <button class="metric-tab active" data-metric="visits">Visites</button>
-            <button class="metric-tab" data-metric="sales">Ventes</button>
+            <button class="metric-tab active" data-metric="sales">Ventes</button>
             <button class="metric-tab" data-metric="owed">Dû aux affiliés</button>
             <button class="metric-tab" data-metric="revenue">Gains</button>
           </div>
@@ -411,10 +406,22 @@
     return Object.values(buckets).sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  // Totaux pour LA période en cours uniquement (aujourd'hui / semaine en cours / mois en cours),
+  // à partir d'une série "daily" déjà chargée — pas de nouvel appel serveur.
+  function computePeriodStats(daily, period) {
+    const empty = { visits: 0, sales: 0, owed: 0, revenue: 0, earnings: 0 };
+    if (!daily || daily.length === 0) return empty;
+    if (period === "day") {
+      return daily[daily.length - 1] || empty;
+    }
+    const buckets = aggregateByPeriod(daily, period);
+    return buckets[buckets.length - 1] || empty;
+  }
+
   // ===== Vue d'ensemble globale =====
   let cachedGlobalDaily = [];
   let currentGlobalPeriod = "day";
-  let currentGlobalMetric = "visits";
+  let currentGlobalMetric = "sales";
 
   async function loadGlobalStats() {
     try {
@@ -427,7 +434,6 @@
       const { totals, daily } = await res.json();
       cachedGlobalDaily = daily || [];
 
-      document.getElementById("globalStatVisits").textContent = totals.totalVisits;
       document.getElementById("globalStatSales").textContent = totals.totalSales;
       document.getElementById("globalStatOwed").textContent = totals.totalOwed.toFixed(2) + "€";
       document.getElementById("globalStatRevenue").textContent = totals.totalRevenue.toFixed(2) + "€";
@@ -887,10 +893,10 @@
         .join("");
 
       const analyticsRows = daily
-        .filter((d) => d.visits > 0 || d.sales > 0)
+        .filter((d) => d.sales > 0)
         .slice()
         .reverse()
-        .map((d) => `<tr><td>${d.date}</td><td>${d.visits}</td><td>${d.sales}</td><td>${Number(d.earnings).toFixed(2)}€</td></tr>`)
+        .map((d) => `<tr><td>${d.date}</td><td>${d.sales}</td><td>${Number(d.earnings).toFixed(2)}€</td></tr>`)
         .join("");
 
       container.innerHTML = `
@@ -902,11 +908,12 @@
 
         <div class="mini-panel active" id="${containerId}-panel-dashboard">
           <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
-            <div class="card stat-card"><div class="stat-label">Visites (tous clients)</div><div class="stat-value">${stats.totalVisits}</div></div>
-            <div class="card stat-card"><div class="stat-label">Ventes (tous clients)</div><div class="stat-value">${stats.totalSales}</div></div>
-            <div class="card stat-card"><div class="stat-label">Taux de conversion</div><div class="stat-value">${conversion}</div></div>
-            <div class="card stat-card"><div class="stat-label">Mes gains</div><div class="stat-value gradient-text">${Number(stats.totalEarnings).toFixed(2)}€</div></div>
+            <div class="card stat-card"><div class="stat-label">Inscription affiliée</div><div class="stat-value">${clients.length}</div></div>
+            <div class="card stat-card"><div class="stat-label">Ventes</div><div class="stat-value" id="${containerId}-stat-sales">${stats.totalSales}</div></div>
+            <div class="card stat-card"><div class="stat-label">Commissions à payer</div><div class="stat-value" id="${containerId}-stat-owed">${Number(stats.totalOwed).toFixed(2)}€</div></div>
+            <div class="card stat-card"><div class="stat-label">Gains</div><div class="stat-value gradient-text" id="${containerId}-stat-revenue">${Number(stats.totalRevenue).toFixed(2)}€</div></div>
           </div>
+          <div class="text-secondary" style="font-size:12px; margin:-8px 0 16px;" id="${containerId}-stat-period-label">Ventes / Commissions / Gains : total depuis le début</div>
           <div class="card chart-card" style="margin-bottom:20px;">
             <div class="chart-card-header flex-between">
               <h3>Activité</h3>
@@ -940,8 +947,8 @@
         <div class="mini-panel" id="${containerId}-panel-analytics">
           <div class="card" style="padding:0; overflow:hidden;">
             <table>
-              <thead><tr><th>Date</th><th>Visites</th><th>Ventes</th><th>Gains</th></tr></thead>
-              <tbody>${analyticsRows || '<tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Pas encore de données</td></tr>'}</tbody>
+              <thead><tr><th>Date</th><th>Ventes</th><th>Gains</th></tr></thead>
+              <tbody>${analyticsRows || '<tr><td colspan="3" class="text-muted" style="text-align:center; padding:16px;">Pas encore de données</td></tr>'}</tbody>
             </table>
           </div>
         </div>
@@ -950,11 +957,25 @@
       // Graphique manager, avec période (Jour/Semaine/Mois) et lecteur au clic
       let currentManagerPeriod = "day";
       const managerReadoutEl = document.getElementById(`${containerId}-chart-readout`);
+      const MANAGER_PERIOD_LABELS = { day: "aujourd'hui", week: "cette semaine", month: "ce mois-ci" };
+
+      function updateManagerStatCards() {
+        const p = computePeriodStats(daily, currentManagerPeriod);
+        document.getElementById(`${containerId}-stat-sales`).textContent = p.sales;
+        document.getElementById(`${containerId}-stat-owed`).textContent = Number(p.owed).toFixed(2) + "€";
+        document.getElementById(`${containerId}-stat-revenue`).textContent = Number(p.revenue).toFixed(2) + "€";
+        document.getElementById(`${containerId}-stat-period-label`).textContent =
+          `Ventes / Commissions / Gains : ${MANAGER_PERIOD_LABELS[currentManagerPeriod]}`;
+      }
 
       function renderManagerChart() {
+        // NB : le graphique affiche les VENTES (pas les visites) — le tracking des visites
+        // remonte 0 en production pour l'instant, ce qui rendait le graphique vide. À rebrancher
+        // sur "visits" une fois ce point réglé côté tracking.
         const source = currentManagerPeriod === "day" ? lastNDays(daily, 30) : aggregateByPeriod(daily, currentManagerPeriod);
         managerReadoutEl.textContent = "Survole ou clique une barre pour voir le détail exact.";
-        renderBarChart(document.getElementById(`${containerId}-chart`), source, "visits", (v) => `${v} visite(s)`, managerReadoutEl);
+        renderBarChart(document.getElementById(`${containerId}-chart`), source, "sales", (v) => `${v} vente(s)`, managerReadoutEl);
+        updateManagerStatCards();
       }
       renderManagerChart();
 
