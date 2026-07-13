@@ -3,11 +3,6 @@
   publish = "."
 
 [[redirects]]
-  from = "/go/*"
-  to   = "/.netlify/functions/go/:splat"
-  status = 200
-
-[[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 404
