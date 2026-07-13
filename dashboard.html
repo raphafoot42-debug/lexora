@@ -127,18 +127,10 @@
         <div class="dash-view-subtitle" data-i18n="dash.dashboard.subtitle">Vue d'ensemble</div>
       </div>
 
-      <div class="stats-grid">
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.visits">Visites</div>
-          <div class="stat-value" id="statVisits">—</div>
-        </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);">
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
           <div class="stat-value" id="statSales">—</div>
-        </div>
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.conversion">Taux de conversion</div>
-          <div class="stat-value" id="statConversion">—</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
@@ -148,7 +140,7 @@
 
       <div class="card chart-card">
         <div class="chart-card-header">
-          <h3 data-i18n="dash.dashboard.activity">Activité par jour</h3>
+          <h3 data-i18n="dash.dashboard.activity">Ventes par jour</h3>
         </div>
         <div id="dashboardChart"></div>
       </div>
@@ -205,18 +197,10 @@
         <div class="dash-view-subtitle" data-i18n="dash.report.subtitle">Le détail de ton activité</div>
       </div>
 
-      <div class="stats-grid">
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.visits">Visites</div>
-          <div class="stat-value" id="reportStatVisits">—</div>
-        </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);">
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
           <div class="stat-value" id="reportStatSales">—</div>
-        </div>
-        <div class="card stat-card">
-          <div class="stat-label" data-i18n="dash.stats.conversion">Taux de conversion</div>
-          <div class="stat-value" id="reportStatConversion">—</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
@@ -226,7 +210,7 @@
 
       <div class="card chart-card">
         <div class="chart-card-header">
-          <h3 data-i18n="dash.dashboard.activity">Activité par jour</h3>
+          <h3 data-i18n="dash.dashboard.activity">Ventes par jour</h3>
           <div class="period-tabs" id="periodTabs">
             <button class="period-tab" data-days="7">7j</button>
             <button class="period-tab active" data-days="14">14j</button>
@@ -356,7 +340,7 @@
     window.location.href = "login.html";
   });
 
-  // ---------- Rendu d'un petit graphique en barres (visites vs ventes) ----------
+  // ---------- Rendu d'un petit graphique en barres (ventes par jour) ----------
   function renderBarChart(containerEl, days) {
     containerEl.innerHTML = "";
     if (!days || days.length === 0) {
@@ -366,7 +350,7 @@
       containerEl.appendChild(empty);
       return;
     }
-    const maxVal = Math.max(1, ...days.map((d) => Math.max(d.visits, d.sales)));
+    const maxVal = Math.max(1, ...days.map((d) => d.sales));
     const wrap = document.createElement("div");
     wrap.className = "bar-chart";
     days.forEach((d) => {
@@ -374,9 +358,9 @@
       col.className = "bar-col";
       const bar = document.createElement("div");
       bar.className = "bar";
-      const heightPct = Math.max(2, (d.sales > 0 ? d.sales : d.visits) / maxVal * 100);
+      const heightPct = Math.max(2, (d.sales / maxVal) * 100);
       bar.style.height = heightPct + "%";
-      bar.title = `${d.label} — ${d.visits} visite(s), ${d.sales} vente(s)`;
+      bar.title = `${d.label} — ${d.sales} vente(s)`;
       const label = document.createElement("div");
       label.className = "bar-label";
       label.textContent = d.label;
@@ -387,9 +371,9 @@
     containerEl.appendChild(wrap);
   }
 
-  // Construit un tableau de N derniers jours (avec 0 par défaut) à partir de
-  // listes brutes de visites et de ventes (chacune avec un champ date optionnel).
-  function buildDailySeries(visitsRaw, salesRaw, numDays) {
+  // Construit un tableau de N derniers jours (avec 0 par défaut) à partir d'une
+  // liste brute de ventes (avec un champ date optionnel).
+  function buildDailySeries(salesRaw, numDays) {
     const days = [];
     const today = new Date();
     for (let i = numDays - 1; i >= 0; i--) {
@@ -399,19 +383,12 @@
       days.push({
         key,
         label: d.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" }),
-        visits: 0,
         sales: 0,
       });
     }
     const dayMap = {};
     days.forEach((d) => (dayMap[d.key] = d));
 
-    (visitsRaw || []).forEach((v) => {
-      const raw = v.created_at || v.inserted_at || v.date;
-      if (!raw) return;
-      const key = new Date(raw).toISOString().slice(0, 10);
-      if (dayMap[key]) dayMap[key].visits += 1;
-    });
     (salesRaw || []).forEach((s) => {
       const raw = s.created_at || s.inserted_at || s.date;
       if (!raw) return;
@@ -422,11 +399,10 @@
     return days;
   }
 
-  let cachedVisits = [];
   let cachedSales = [];
 
   function refreshReportChart(numDays) {
-    const days = buildDailySeries(cachedVisits, cachedSales, numDays);
+    const days = buildDailySeries(cachedSales, numDays);
     renderBarChart(document.getElementById("reportChart"), days);
   }
 
@@ -521,27 +497,20 @@
         return;
       }
 
-      const { affiliate, stats, sales, visits } = await res.json();
+      const { affiliate, stats, sales } = await res.json();
 
       cachedSales = sales || [];
-      cachedVisits = visits || [];
 
       const totalSales = stats.totalSales;
-      const totalVisits = cachedVisits.length;
-      const conversion = totalVisits > 0 ? ((totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
       const earnings = Number(stats.totalEarnings || 0).toFixed(2) + "€";
 
       // Dashboard
-      document.getElementById("statVisits").textContent = totalVisits;
       document.getElementById("statSales").textContent = totalSales;
-      document.getElementById("statConversion").textContent = conversion;
       document.getElementById("statEarnings").textContent = earnings;
-      renderBarChart(document.getElementById("dashboardChart"), buildDailySeries(cachedVisits, cachedSales, 14));
+      renderBarChart(document.getElementById("dashboardChart"), buildDailySeries(cachedSales, 14));
 
       // Report (mêmes chiffres pour l'instant, période ajustable via les onglets)
-      document.getElementById("reportStatVisits").textContent = totalVisits;
       document.getElementById("reportStatSales").textContent = totalSales;
-      document.getElementById("reportStatConversion").textContent = conversion;
       document.getElementById("reportStatEarnings").textContent = earnings;
       refreshReportChart(14);
 
