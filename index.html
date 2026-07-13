@@ -6,6 +6,39 @@
 <title>Programme d'affiliation — Gagne 40€ par vente</title>
 <link rel="stylesheet" href="themes.css" />
 <link rel="stylesheet" href="styles.css" />
+<style>
+  .access-cards {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .access-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 220px;
+    height: 220px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(var(--accent-1-rgb), 0.3);
+    text-decoration: none;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .access-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-1);
+    box-shadow: 0 0 30px rgba(var(--accent-1-rgb), 0.35);
+  }
+  .access-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+</style>
 </head>
 <body>
 
@@ -41,35 +74,29 @@
     </div>
     <div class="navbar-right">
       <div class="theme-dot-group" id="themeDotGroup"></div>
-      <div class="vdivider"></div>
-      <a href="login.html" class="btn btn-primary" data-i18n="nav.login">Connexion</a>
     </div>
   </div>
 </header>
 
 <!-- HERO -->
-<section class="container" style="padding: 90px 24px 80px; text-align: center;">
-  <div class="badge-glow" style="margin-bottom: 28px;">
-    <span data-i18n="hero.badge_prefix">Programme d'</span><span class="accent" data-i18n="hero.badge_accent">affiliation</span>
+<section class="container" style="padding: 100px 24px; text-align: center;">
+  <div class="access-cards">
+    <a href="login.html" class="access-card">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.7">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
+      </svg>
+      <span class="access-card-title gradient-text" data-i18n="access.member">Espace Membre</span>
+    </a>
+    <a href="admin.html" class="access-card">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent-1)" stroke-width="1.7">
+        <rect x="4" y="10" width="16" height="10" rx="2"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+      </svg>
+      <span class="access-card-title gradient-text" data-i18n="access.admin">Espace Admin</span>
+    </a>
   </div>
-
-  <!-- Petite couronne décorative, façon logo -->
-  <svg width="52" height="40" viewBox="0 0 52 40" fill="none" style="margin: 0 auto 10px; display:block; filter: drop-shadow(0 0 10px rgba(var(--accent-1-rgb), 0.7));">
-    <path d="M6 32 L2 12 L14 22 L26 6 L38 22 L50 12 L46 32 Z" stroke="var(--accent-1)" stroke-width="2" stroke-linejoin="round" fill="none"/>
-  </svg>
-
-  <h1 class="gradient-text neon-glow" style="font-size: clamp(34px, 8vw, 68px); font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; max-width: 820px; margin: 0 auto; line-height:1.15;" data-i18n="hero.big_title">
-    Programme d'affiliation
-  </h1>
 </section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container flex-between">
-    <span class="text-muted" style="font-size:13px;">© 2026 Affiliation</span>
-    <a href="admin.html" class="footer-admin-link" data-i18n="footer.admin">Admin</a>
-  </div>
-</footer>
 
 <script src="lang.js"></script>
 <script src="decor.js"></script>
