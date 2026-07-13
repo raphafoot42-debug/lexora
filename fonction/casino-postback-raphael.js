@@ -1,24 +1,9 @@
-/* ===== NETLIFY FUNCTION : casino-postback-raphael.js ===== */
-/* Version dédiée à Raphaël : identique à casino-postback.js (côté Noé),
-   mais utilise SA PROPRE clé secrète BlueAffiliates et SA PROPRE adresse
-   email de notification, puisque son compte BlueAffiliates est séparé
-   (une fois créé).
-
-   ⚠️ EN ATTENTE : tant que BLUEAFFILIATES_HMAC_SECRET_RAPHAEL n'est pas
-   renseigné dans Netlify, cette fonction rejette silencieusement toutes
-   les requêtes (signature jamais valide). Aucun risque à la déployer
-   maintenant, elle restera inactive jusqu'à ce que le vrai secret soit ajouté.
-
-   Une fois le compte BlueAffiliates de Raphaël créé :
-   1. Ajouter BLUEAFFILIATES_HMAC_SECRET_RAPHAEL dans Netlify
-   2. Ajouter NOTIFY_TO_EMAIL_RAPHAEL dans Netlify
-   3. Donner cette URL à BlueAffiliates comme endpoint de postback :
-      https://lexoraia.netlify.app/.netlify/functions/casino-postback-raphael
-   Rien d'autre à changer dans le code.
+/* ===== NETLIFY FUNCTION : casino-postback.js ===== */
+/* Reçoit les notifications "postback" (S2S) envoyées automatiquement par
+   BlueAffiliates à chaque dépôt confirmé sur l'un des liens d'un affilié.
 
    Variables d'environnement Netlify nécessaires :
-   - BLUEAFFILIATES_HMAC_SECRET_RAPHAEL
-   - NOTIFY_TO_EMAIL_RAPHAEL
+   - BLUEAFFILIATES_HMAC_SECRET
    - SUPABASE_URL
    - SUPABASE_SERVICE_KEY
    - SITE_URL
@@ -30,7 +15,7 @@ const { createClient } = require("@supabase/supabase-js");
 const MIN_AMOUNT_EUR = 20;
 const DEPOSIT_EVENTS = ["deposit", "ftd"];
 const VISIT_EVENTS = ["registration"];
-const MANAGER_POOL_TOTAL_EUR = 80; // cagnotte fixe par dépôt confirmé, répartie affilié + manager
+const MANAGER_POOL_TOTAL_EUR = 80;
 
 function rfc3986(str) {
   return encodeURIComponent(str).replace(/[!*'()]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
@@ -55,8 +40,6 @@ function verifySignature(params, receivedSig, secret) {
 }
 
 exports.handler = async (event) => {
-  // BlueAffiliates envoie du GET, ou du POST en x-www-form-urlencoded (mêmes
-  // données dans les deux cas). On accepte les deux.
   let params = {};
   if (event.httpMethod === "GET") {
     params = event.queryStringParameters || {};
@@ -67,7 +50,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const BLUEAFFILIATES_HMAC_SECRET = process.env.BLUEAFFILIATES_HMAC_SECRET_RAPHAEL;
+  const BLUEAFFILIATES_HMAC_SECRET = process.env.BLUEAFFILIATES_HMAC_SECRET;
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
   const SITE_URL = process.env.SITE_URL;
@@ -77,7 +60,6 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: "Server misconfiguration" };
   }
 
-  // ===== Vérification de la signature : obligatoire, jamais de bypass =====
   const isValidSignature = verifySignature(params, params.sig, BLUEAFFILIATES_HMAC_SECRET);
   if (!isValidSignature) {
     console.warn("Postback reçu avec signature invalide, ignoré (mais accusé de réception).");
@@ -96,7 +78,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, body: "OK" };
   }
 
-  // Transactions de test envoyées depuis le bouton "Test" du dashboard BlueAffiliates
   if (transactionId.startsWith("test-")) {
     console.log("Postback de test reçu, accusé de réception sans enregistrement.");
     return { statusCode: 200, body: "OK" };
@@ -105,15 +86,16 @@ exports.handler = async (event) => {
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
   try {
-    // Identification de l'affilié via le code court du lien (campaign_slug),
-    // ou à défaut sub1 si Julien l'a configuré manuellement sur le lien.
     const matchValue = campaignSlug || sub1;
     let affiliate = null;
 
     if (matchValue) {
+      // FIX A : on inclut tracking_slug_roulette et tracking_slug_direct dans le SELECT,
+      // sinon affiliate.tracking_slug_direct est toujours undefined et link_type
+      // tombe toujours sur "roulette".
       const { data, error } = await supabaseAdmin
         .from("affiliates")
-        .select("id, prenom, commission_amount, statut, manager")
+        .select("id, prenom, commission_amount, statut, manager, tracking_slug_roulette, tracking_slug_direct")
         .or(`tracking_slug_roulette.eq.${matchValue},tracking_slug_direct.eq.${matchValue}`)
         .maybeSingle();
 
@@ -126,7 +108,7 @@ exports.handler = async (event) => {
       console.warn("Postback reçu mais aucun affilié ne correspond à :", matchValue);
     }
 
-    // ===== Événement "registration" = une VISITE (inscription sur le casino) =====
+    // ===== Événement "registration" = une VISITE =====
     if (VISIT_EVENTS.includes(eventType)) {
       const { data: existingVisit } = await supabaseAdmin
         .from("visits")
@@ -148,7 +130,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: "OK" };
     }
 
-    // ===== Événement "deposit"/"ftd" = une VENTE (commission) =====
+    // ===== Événement "deposit"/"ftd" = une VENTE =====
     if (!DEPOSIT_EVENTS.includes(eventType)) {
       return { statusCode: 200, body: "OK (event ignored)" };
     }
@@ -199,7 +181,7 @@ exports.handler = async (event) => {
           saleAmount: amountPaidEur,
           commission,
           saleId: sale.id,
-          toEmail: process.env.NOTIFY_TO_EMAIL_RAPHAEL, // notifications "côté Raphaël"
+          toEmail: process.env.NOTIFY_TO_EMAIL,
         }),
       });
     }
@@ -207,7 +189,6 @@ exports.handler = async (event) => {
     return { statusCode: 200, body: "OK" };
   } catch (err) {
     console.error("Erreur casino-postback.js :", err);
-    // On répond quand même 200 pour éviter des retries en boucle côté BlueAffiliates
     return { statusCode: 200, body: "OK (error logged)" };
   }
 };
