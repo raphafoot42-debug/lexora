@@ -52,6 +52,22 @@
   .mini-tab.active { background: var(--card-bg); color: var(--text-primary); border-color: rgba(var(--accent-1-rgb), 0.4); }
   .mini-panel { display: none; }
   .mini-panel.active { display: block; }
+  .period-tabs { display: flex; gap: 6px; }
+  .period-tab {
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .period-tab.active {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border-color: rgba(var(--accent-1-rgb), 0.4);
+  }
 </style>
 </head>
 <body>
@@ -132,7 +148,7 @@
 
       <div class="card chart-card">
         <div class="chart-card-header">
-          <h3>Activité par jour</h3>
+          <h3>Activité</h3>
           <div class="metric-tabs" id="globalMetricTabs">
             <button class="metric-tab active" data-metric="visits">Visites</button>
             <button class="metric-tab" data-metric="sales">Ventes</button>
@@ -140,6 +156,12 @@
             <button class="metric-tab" data-metric="revenue">Gains</button>
           </div>
         </div>
+        <div class="period-tabs" id="globalPeriodTabs" style="margin:0 0 14px;">
+          <button class="period-tab active" data-period="day">Jour</button>
+          <button class="period-tab" data-period="week">Semaine</button>
+          <button class="period-tab" data-period="month">Mois</button>
+        </div>
+        <div id="globalChartReadout" class="text-secondary" style="font-size:13px; margin-bottom:10px; min-height:18px;">Survole ou clique une barre pour voir le détail exact.</div>
         <div id="globalChart"></div>
       </div>
     </div>
@@ -237,6 +259,7 @@
 
 <script src="lang.js"></script>
 <script src="decor.js"></script>
+<script src="privacy.js"></script>
 <script>
   const THEMES = ["cyan", "violet", "emerald", "rose", "amber", "indigo"];
   const THEME_STORAGE_KEY = "site_theme";
@@ -314,7 +337,7 @@
   }
 
   // ===== Graphique en barres réutilisable (vue d'ensemble + mini-dashboards) =====
-  function renderBarChart(containerEl, days, valueKey, formatFn) {
+  function renderBarChart(containerEl, days, valueKey, formatFn, readoutEl) {
     containerEl.innerHTML = "";
     if (!days || days.length === 0) {
       const empty = document.createElement("div");
@@ -336,6 +359,12 @@
       bar.style.height = heightPct + "%";
       const dateLabel = new Date(d.date).toLocaleDateString();
       bar.title = `${dateLabel} — ${format(d[valueKey])}`;
+      bar.style.cursor = "pointer";
+      if (readoutEl) {
+        bar.addEventListener("click", () => {
+          readoutEl.textContent = `${dateLabel} : ${format(d[valueKey])}`;
+        });
+      }
       const label = document.createElement("div");
       label.className = "bar-label";
       label.textContent = new Date(d.date).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
@@ -352,8 +381,40 @@
     return daily.slice(-n);
   }
 
+  // Réagrège une série journalière en semaines ou en mois, sans appel serveur
+  // (les données journalières sont déjà en cache côté client).
+  function aggregateByPeriod(daily, period) {
+    if (!daily || daily.length === 0) return [];
+    if (period === "day") return daily.slice(-30);
+
+    const buckets = {};
+    daily.forEach((d) => {
+      const date = new Date(d.date);
+      let key;
+      if (period === "week") {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        key = weekStart.toISOString().slice(0, 10);
+      } else {
+        key = d.date.slice(0, 7) + "-01"; // année-mois
+      }
+      if (!buckets[key]) {
+        buckets[key] = { date: key, visits: 0, sales: 0, owed: 0, revenue: 0, earnings: 0 };
+      }
+      buckets[key].visits += d.visits || 0;
+      buckets[key].sales += d.sales || 0;
+      buckets[key].owed += d.owed || 0;
+      buckets[key].revenue += d.revenue || 0;
+      buckets[key].earnings += d.earnings || 0;
+    });
+
+    return Object.values(buckets).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   // ===== Vue d'ensemble globale =====
   let cachedGlobalDaily = [];
+  let currentGlobalPeriod = "day";
+  let currentGlobalMetric = "visits";
 
   async function loadGlobalStats() {
     try {
@@ -371,21 +432,36 @@
       document.getElementById("globalStatOwed").textContent = totals.totalOwed.toFixed(2) + "€";
       document.getElementById("globalStatRevenue").textContent = totals.totalRevenue.toFixed(2) + "€";
 
-      renderGlobalChart("visits");
+      renderGlobalChart();
     } catch (err) {
       console.error(err);
     }
   }
 
-  function renderGlobalChart(metric) {
-    const days = lastNDays(cachedGlobalDaily, 30);
-    const formatters = {
-      visits: (v) => `${v} visite(s)`,
-      sales: (v) => `${v} vente(s)`,
-      owed: (v) => `${v.toFixed(2)}€ dû(s)`,
-      revenue: (v) => `${v.toFixed(2)}€ gagné(s)`,
-    };
-    renderBarChart(document.getElementById("globalChart"), days, metric, formatters[metric]);
+  const METRIC_FORMATTERS = {
+    visits: (v) => `${v} visite(s)`,
+    sales: (v) => `${v} vente(s)`,
+    owed: (v) => `${Number(v).toFixed(2)}€ dû(s)`,
+    revenue: (v) => `${Number(v).toFixed(2)}€ gagné(s)`,
+    earnings: (v) => `${Number(v).toFixed(2)}€ gagné(s)`,
+  };
+
+  function renderGlobalChart() {
+    const source = currentGlobalPeriod === "day" ? lastNDays(cachedGlobalDaily, 30) : aggregateByPeriod(cachedGlobalDaily, currentGlobalPeriod);
+    const readout = document.getElementById("globalChartReadout");
+    if (readout) readout.textContent = "Survole ou clique une barre pour voir le détail exact.";
+    renderBarChart(document.getElementById("globalChart"), source, currentGlobalMetric, METRIC_FORMATTERS[currentGlobalMetric], readout);
+  }
+
+  function initGlobalPeriodTabs() {
+    document.querySelectorAll("#globalPeriodTabs .period-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("#globalPeriodTabs .period-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentGlobalPeriod = tab.getAttribute("data-period");
+        renderGlobalChart();
+      });
+    });
   }
 
   function initGlobalMetricTabs() {
@@ -393,7 +469,8 @@
       tab.addEventListener("click", () => {
         document.querySelectorAll("#globalMetricTabs .metric-tab").forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
-        renderGlobalChart(tab.getAttribute("data-metric"));
+        currentGlobalMetric = tab.getAttribute("data-metric");
+        renderGlobalChart();
       });
     });
   }
@@ -404,6 +481,7 @@
     initThemeSelector();
     initAdminTabs();
     initGlobalMetricTabs();
+    initGlobalPeriodTabs();
     loadGlobalStats();
     loadAffiliatesTable();
     loadSpecialAffiliatePanel("noe", "noe-content");
@@ -588,10 +666,10 @@
         box.innerHTML = "<p style='padding:24px;'>Erreur de chargement.</p>";
         return;
       }
-      const { affiliate, stats, sales } = await res.json();
+      const { affiliate, stats, sales, visits } = await res.json();
 
       if (mode === "view") {
-        renderViewModal(box, affiliate, stats, sales);
+        renderViewModal(box, affiliate, stats, sales, visits);
       } else {
         renderEditModal(box, affiliate);
       }
@@ -601,21 +679,39 @@
     }
   }
 
-  function renderViewModal(box, affiliate, stats, sales) {
+  function renderViewModal(box, affiliate, stats, sales, visits) {
     const rows = sales.map((s) => `<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.amount}€</td><td>${s.commission}€</td></tr>`).join("");
+    const totalVisits = (visits || []).length;
+    const conversion = totalVisits > 0 ? ((stats.totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
+
     box.innerHTML = `
       <div style="padding:28px;">
         <div class="flex-between" style="margin-bottom:20px;">
-          <h2 style="font-size:20px; font-weight:700;">Dashboard de ${affiliate.prenom}</h2>
+          <h2 style="font-size:20px; font-weight:700;">${affiliate.prenom}</h2>
           <button class="btn btn-outline btn-sm" id="closeModalBtn">Fermer</button>
         </div>
-        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
+        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;">
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Visites</div><div style="font-size:22px; font-weight:800;">${totalVisits}</div></div>
           <div class="card"><div class="text-secondary" style="font-size:12px;">Ventes</div><div style="font-size:22px; font-weight:800;">${stats.totalSales}</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:12px;">Gains</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:12px;">Commission/vente</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${affiliate.commission_amount}€</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Conversion</div><div style="font-size:22px; font-weight:800;">${conversion}</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">À lui payer</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
         </div>
-        <div class="field-inline" style="margin-bottom:10px;"><label>Lien Roulette</label><div class="link-box" style="margin-top:4px;">${affiliate.link_roulette}</div></div>
-        <div class="field-inline" style="margin-bottom:16px;"><label>Lien Direct</label><div class="link-box" style="margin-top:4px;">${affiliate.link_direct}</div></div>
+        <div class="field-inline" style="margin-bottom:10px;"><label>Lien Roulette</label><div class="link-box sensitive-blur" style="margin-top:4px;">${affiliate.link_roulette}</div></div>
+        <div class="field-inline" style="margin-bottom:16px;"><label>Lien Direct</label><div class="link-box sensitive-blur" style="margin-top:4px;">${affiliate.link_direct}</div></div>
+
+        <div class="card chart-card" style="margin-bottom:16px;">
+          <div class="chart-card-header flex-between">
+            <h3 style="font-size:14px;">Activité</h3>
+            <div class="period-tabs" id="modalPeriodTabs" style="margin:0;">
+              <button class="period-tab active" data-period="day">Jour</button>
+              <button class="period-tab" data-period="week">Semaine</button>
+              <button class="period-tab" data-period="month">Mois</button>
+            </div>
+          </div>
+          <div id="modalChartReadout" class="text-secondary" style="font-size:13px; margin:10px 0;">Survole ou clique une barre pour voir le détail exact.</div>
+          <div id="modalChart"></div>
+        </div>
+
         <table>
           <thead><tr><th>Date</th><th>Montant payé</th><th>Commission</th></tr></thead>
           <tbody>${rows || '<tr><td colspan="3" class="text-muted" style="text-align:center; padding:16px;">Aucune vente</td></tr>'}</tbody>
@@ -623,6 +719,49 @@
       </div>
     `;
     document.getElementById("closeModalBtn").addEventListener("click", closeAffiliateModal);
+
+    // Construction d'une série journalière à partir des ventes/visites brutes de ce client
+    const dayMap = {};
+    const today = new Date();
+    for (let i = 89; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      dayMap[key] = { date: key, visits: 0, sales: 0, earnings: 0 };
+    }
+    (visits || []).forEach((v) => {
+      if (!v.created_at) return;
+      const key = new Date(v.created_at).toISOString().slice(0, 10);
+      if (dayMap[key]) dayMap[key].visits += 1;
+    });
+    (sales || []).forEach((s) => {
+      if (!s.created_at) return;
+      const key = new Date(s.created_at).toISOString().slice(0, 10);
+      if (dayMap[key]) {
+        dayMap[key].sales += 1;
+        dayMap[key].earnings += Number(s.commission || 0);
+      }
+    });
+    const modalDaily = Object.values(dayMap);
+
+    let currentModalPeriod = "day";
+    const modalReadoutEl = document.getElementById("modalChartReadout");
+
+    function renderModalChart() {
+      const source = currentModalPeriod === "day" ? lastNDays(modalDaily, 30) : aggregateByPeriod(modalDaily, currentModalPeriod);
+      modalReadoutEl.textContent = "Survole ou clique une barre pour voir le détail exact.";
+      renderBarChart(document.getElementById("modalChart"), source, "earnings", (v) => `${Number(v).toFixed(2)}€ gagné(s)`, modalReadoutEl);
+    }
+    renderModalChart();
+
+    document.querySelectorAll("#modalPeriodTabs .period-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("#modalPeriodTabs .period-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentModalPeriod = tab.getAttribute("data-period");
+        renderModalChart();
+      });
+    });
   }
 
   function renderEditModal(box, affiliate) {
@@ -700,101 +839,135 @@
     document.getElementById("affiliateModal").classList.remove("active");
   }
 
-  // ===== Panneaux Noé / Raphaël : mini-dashboard complet (Dashboard / Mes liens / Profil) =====
-  async function loadSpecialAffiliatePanel(prenom, containerId) {
+  // ===== Panneaux Noé / Raphaël : dashboard AGRÉGÉ de tous leurs clients =====
+  async function loadSpecialAffiliatePanel(manager, containerId) {
     const container = document.getElementById(containerId);
     try {
-      const res = await fetch("/.netlify/functions/admin-list-affiliates", { method: "POST", headers: adminHeaders() });
-      if (!res.ok) return;
-      const { affiliates } = await res.json();
-      const match = affiliates.find((a) => a.prenom.toLowerCase() === prenom.toLowerCase());
+      const res = await fetch("/.netlify/functions/admin-manager-dashboard", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({ manager }),
+      });
 
-      if (!match) {
-        container.innerHTML = `<p class="text-secondary">Aucun compte "${prenom}" trouvé. Crée-le d'abord dans l'onglet Admin avec ce prénom exact.</p>`;
+      if (!res.ok) {
+        container.innerHTML = `<p class="text-secondary">Erreur de chargement.</p>`;
         return;
       }
 
-      const dataRes = await fetch("/.netlify/functions/admin-get-affiliate-data", {
-        method: "POST",
-        headers: adminHeaders(),
-        body: JSON.stringify({ affiliateId: match.id }),
-      });
-      const { affiliate, stats, sales, visits } = await dataRes.json();
+      const { clients, stats, daily } = await res.json();
+      const conversion = stats.totalVisits > 0 ? stats.conversionRate.toFixed(1) + "%" : "—";
 
-      const totalVisits = (visits || []).length;
-      const conversion = totalVisits > 0 ? ((stats.totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
+      const clientRows = clients
+        .map((a) => {
+          const isActive = a.statut === "actif";
+          return `
+            <tr>
+              <td>${a.prenom}</td>
+              <td>${a.commission_amount}€</td>
+              <td><span class="status-badge ${isActive ? "status-active" : "status-suspended"}">${isActive ? "Actif" : "Suspendu"}</span></td>
+              <td><button class="btn btn-outline btn-sm" data-view-client="${a.id}">Voir dashboard</button></td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const linkRows = clients
+        .map(
+          (a) => `
+            <tr>
+              <td>${a.prenom}</td>
+              <td class="sensitive-blur" style="font-family:monospace; font-size:12px;">${a.link_roulette || "—"}</td>
+              <td><button class="btn btn-outline btn-sm" data-copy-link="${(a.link_roulette || "").replace(/"/g, "&quot;")}">Copier</button></td>
+              <td class="sensitive-blur" style="font-family:monospace; font-size:12px;">${a.link_direct || "—"}</td>
+              <td><button class="btn btn-outline btn-sm" data-copy-link="${(a.link_direct || "").replace(/"/g, "&quot;")}">Copier</button></td>
+              <td><button class="btn btn-outline btn-sm" data-edit-client="${a.id}">Modifier</button></td>
+            </tr>
+          `
+        )
+        .join("");
+
+      const analyticsRows = daily
+        .filter((d) => d.visits > 0 || d.sales > 0)
+        .slice()
+        .reverse()
+        .map((d) => `<tr><td>${d.date}</td><td>${d.visits}</td><td>${d.sales}</td><td>${Number(d.earnings).toFixed(2)}€</td></tr>`)
+        .join("");
 
       container.innerHTML = `
         <div class="mini-tabs">
           <button class="mini-tab active" data-mini="dashboard">Dashboard</button>
           <button class="mini-tab" data-mini="links">Mes liens</button>
-          <button class="mini-tab" data-mini="profile">Profil</button>
+          <button class="mini-tab" data-mini="analytics">Analyse</button>
         </div>
 
         <div class="mini-panel active" id="${containerId}-panel-dashboard">
           <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
-            <div class="card stat-card"><div class="stat-label">Visites</div><div class="stat-value">${totalVisits}</div></div>
-            <div class="card stat-card"><div class="stat-label">Ventes</div><div class="stat-value">${stats.totalSales}</div></div>
+            <div class="card stat-card"><div class="stat-label">Visites (tous clients)</div><div class="stat-value">${stats.totalVisits}</div></div>
+            <div class="card stat-card"><div class="stat-label">Ventes (tous clients)</div><div class="stat-value">${stats.totalSales}</div></div>
             <div class="card stat-card"><div class="stat-label">Taux de conversion</div><div class="stat-value">${conversion}</div></div>
-            <div class="card stat-card"><div class="stat-label">Gains</div><div class="stat-value gradient-text">${Number(stats.totalEarnings).toFixed(2)}€</div></div>
+            <div class="card stat-card"><div class="stat-label">Mes gains</div><div class="stat-value gradient-text">${Number(stats.totalEarnings).toFixed(2)}€</div></div>
           </div>
-          <div class="card chart-card">
-            <div class="chart-card-header"><h3>Activité par jour</h3></div>
+          <div class="card chart-card" style="margin-bottom:20px;">
+            <div class="chart-card-header flex-between">
+              <h3>Activité</h3>
+              <div class="period-tabs" id="${containerId}-period-tabs" style="margin:0;">
+                <button class="period-tab active" data-period="day">Jour</button>
+                <button class="period-tab" data-period="week">Semaine</button>
+                <button class="period-tab" data-period="month">Mois</button>
+              </div>
+            </div>
+            <div id="${containerId}-chart-readout" class="text-secondary" style="font-size:13px; margin:10px 0;">Survole ou clique une barre pour voir le détail exact.</div>
             <div id="${containerId}-chart"></div>
+          </div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:16px 20px 0;"><h3 style="font-size:15px; font-weight:700;">Mes clients</h3></div>
+            <table>
+              <thead><tr><th>Prénom</th><th>Commission</th><th>Statut</th><th></th></tr></thead>
+              <tbody>${clientRows || '<tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Aucun client</td></tr>'}</tbody>
+            </table>
           </div>
         </div>
 
         <div class="mini-panel" id="${containerId}-panel-links">
-          <div class="card" style="margin-bottom:14px;">
-            <div class="field-inline"><label>Lien Roulette</label>
-              <div style="display:flex; gap:8px; margin-top:6px;">
-                <input type="text" id="${containerId}-roulette" value="${affiliate.link_roulette}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
-                <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-roulette').value)">Copier</button>
-              </div>
-            </div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+              <thead><tr><th>Prénom</th><th>Lien Roulette</th><th></th><th>Lien Direct</th><th></th><th></th></tr></thead>
+              <tbody>${linkRows || '<tr><td colspan="6" class="text-muted" style="text-align:center; padding:16px;">Aucun client</td></tr>'}</tbody>
+            </table>
           </div>
-          <div class="card" style="margin-bottom:14px;">
-            <div class="field-inline"><label>Lien Direct</label>
-              <div style="display:flex; gap:8px; margin-top:6px;">
-                <input type="text" id="${containerId}-direct" value="${affiliate.link_direct}" style="flex:1; background: var(--bg-2); border:1px solid var(--card-border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary); font-size:13px;" />
-                <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('${containerId}-direct').value)">Copier</button>
-              </div>
-            </div>
-          </div>
-          <button class="btn btn-primary" id="${containerId}-save-links">Enregistrer mes liens</button>
-          <div id="${containerId}-links-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
         </div>
 
-        <div class="mini-panel" id="${containerId}-panel-profile">
-          <div class="card" style="max-width:480px;">
-            <div class="form-grid">
-              <div class="field-inline"><label>Prénom</label><input type="text" id="${containerId}-prenom" value="${affiliate.prenom}" /></div>
-              <div class="field-inline"><label>Nouveau mot de passe (vide = inchangé)</label><input type="text" id="${containerId}-password" placeholder="Laisser vide pour ne pas changer" /></div>
-              <div class="field-inline"><label>Commission par vente (€)</label><input type="number" id="${containerId}-commission" value="${affiliate.commission_amount}" /></div>
-            </div>
-            <button class="btn btn-primary" id="${containerId}-save-profile">Enregistrer le profil</button>
-            <div id="${containerId}-profile-result" class="text-secondary" style="font-size:13px; margin-top:10px;"></div>
+        <div class="mini-panel" id="${containerId}-panel-analytics">
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+              <thead><tr><th>Date</th><th>Visites</th><th>Ventes</th><th>Gains</th></tr></thead>
+              <tbody>${analyticsRows || '<tr><td colspan="4" class="text-muted" style="text-align:center; padding:16px;">Pas encore de données</td></tr>'}</tbody>
+            </table>
           </div>
         </div>
       `;
 
-      // Rendu du graphique (14 derniers jours), défensif si les dates manquent
-      const dayMap = {};
-      const today = new Date();
-      for (let i = 13; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
-        dayMap[key] = { date: key, visits: 0 };
-      }
-      (visits || []).forEach((v) => {
-        if (!v.created_at) return;
-        const key = new Date(v.created_at).toISOString().slice(0, 10);
-        if (dayMap[key]) dayMap[key].visits += 1;
-      });
-      renderBarChart(document.getElementById(`${containerId}-chart`), Object.values(dayMap), "visits", (v) => `${v} visite(s)`);
+      // Graphique manager, avec période (Jour/Semaine/Mois) et lecteur au clic
+      let currentManagerPeriod = "day";
+      const managerReadoutEl = document.getElementById(`${containerId}-chart-readout`);
 
-      // Onglets internes du mini-dashboard
+      function renderManagerChart() {
+        const source = currentManagerPeriod === "day" ? lastNDays(daily, 30) : aggregateByPeriod(daily, currentManagerPeriod);
+        managerReadoutEl.textContent = "Survole ou clique une barre pour voir le détail exact.";
+        renderBarChart(document.getElementById(`${containerId}-chart`), source, "visits", (v) => `${v} visite(s)`, managerReadoutEl);
+      }
+      renderManagerChart();
+
+      document.querySelectorAll(`#${containerId}-period-tabs .period-tab`).forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(`#${containerId}-period-tabs .period-tab`).forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          currentManagerPeriod = tab.getAttribute("data-period");
+          renderManagerChart();
+        });
+      });
+
+      // Onglets internes
       container.querySelectorAll(".mini-tab").forEach((tab) => {
         tab.addEventListener("click", () => {
           container.querySelectorAll(".mini-tab").forEach((t) => t.classList.remove("active"));
@@ -804,65 +977,26 @@
         });
       });
 
-      // Sauvegarde des liens
-      document.getElementById(`${containerId}-save-links`).addEventListener("click", async () => {
-        const linkRoulette = document.getElementById(`${containerId}-roulette`).value.trim();
-        const linkDirect = document.getElementById(`${containerId}-direct`).value.trim();
-        const resultBox = document.getElementById(`${containerId}-links-result`);
-
-        const saveRes = await fetch("/.netlify/functions/admin-save-affiliate", {
-          method: "POST",
-          headers: adminHeaders(),
-          body: JSON.stringify({
-            id: affiliate.id,
-            prenom: affiliate.prenom,
-            linkRoulette,
-            linkDirect,
-            commissionAmount: affiliate.commission_amount,
-          }),
-        });
-
-        resultBox.textContent = saveRes.ok ? "Liens mis à jour ✔" : "Erreur lors de la mise à jour.";
-        resultBox.style.color = saveRes.ok ? "" : "#f87171";
+      // Bouton "Voir dashboard" sur un client précis (réutilise la modale existante)
+      container.querySelectorAll("button[data-view-client]").forEach((btn) => {
+        btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-view-client"), "view"));
       });
 
-      // Sauvegarde du profil (prénom / mot de passe / commission)
-      document.getElementById(`${containerId}-save-profile`).addEventListener("click", async () => {
-        const newPrenom = document.getElementById(`${containerId}-prenom`).value.trim();
-        const newPassword = document.getElementById(`${containerId}-password`).value.trim();
-        const newCommission = document.getElementById(`${containerId}-commission`).value.trim();
-        const resultBox = document.getElementById(`${containerId}-profile-result`);
+      // Bouton "Modifier" sur un client, depuis la page Mes liens
+      container.querySelectorAll("button[data-edit-client]").forEach((btn) => {
+        btn.addEventListener("click", () => openAffiliateModal(btn.getAttribute("data-edit-client"), "edit"));
+      });
 
-        if (!newPrenom || !newCommission) {
-          resultBox.textContent = "Prénom et commission sont obligatoires.";
-          resultBox.style.color = "#f87171";
-          return;
-        }
-
-        const body = {
-          id: affiliate.id,
-          prenom: newPrenom,
-          linkRoulette: affiliate.link_roulette,
-          linkDirect: affiliate.link_direct,
-          commissionAmount: newCommission,
-        };
-        if (newPassword) body.password = newPassword;
-
-        const saveRes = await fetch("/.netlify/functions/admin-save-affiliate", {
-          method: "POST",
-          headers: adminHeaders(),
-          body: JSON.stringify(body),
+      // Boutons copier
+      container.querySelectorAll("button[data-copy-link]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const link = btn.getAttribute("data-copy-link");
+          if (!link) return;
+          await navigator.clipboard.writeText(link);
+          const original = btn.textContent;
+          btn.textContent = "Copié !";
+          setTimeout(() => (btn.textContent = original), 1500);
         });
-
-        if (!saveRes.ok) {
-          resultBox.textContent = "Erreur lors de la mise à jour.";
-          resultBox.style.color = "#f87171";
-          return;
-        }
-
-        resultBox.style.color = "";
-        resultBox.textContent = "Profil mis à jour ✔";
-        loadAffiliatesTable();
       });
     } catch (err) {
       console.error(err);
