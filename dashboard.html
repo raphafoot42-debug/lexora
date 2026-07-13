@@ -127,10 +127,18 @@
         <div class="dash-view-subtitle" data-i18n="dash.dashboard.subtitle">Vue d'ensemble</div>
       </div>
 
-      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="stats-grid">
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.sales">Ventes</div>
           <div class="stat-value" id="statSales">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.commission">Commission par vente</div>
+          <div class="stat-value" id="statCommission">—</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label" data-i18n="dash.stats.best_day">Meilleur jour</div>
+          <div class="stat-value" id="statBestDay" style="font-size:18px;">—</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label" data-i18n="dash.stats.earnings">Gains</div>
@@ -399,6 +407,28 @@
     return days;
   }
 
+  // Trouve le jour (toutes dates confondues, pas seulement les 14 derniers jours)
+  // avec le plus de ventes. Retourne un texte prêt à afficher.
+  function computeBestDay(salesRaw) {
+    if (!salesRaw || salesRaw.length === 0) return "—";
+
+    const counts = {};
+    salesRaw.forEach((s) => {
+      const raw = s.created_at || s.inserted_at || s.date;
+      if (!raw) return;
+      const key = new Date(raw).toISOString().slice(0, 10);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    const entries = Object.entries(counts);
+    if (entries.length === 0) return "—";
+
+    entries.sort((a, b) => b[1] - a[1]);
+    const [bestKey, bestCount] = entries[0];
+    const label = new Date(bestKey).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
+    return `${label} (${bestCount})`;
+  }
+
   let cachedSales = [];
 
   function refreshReportChart(numDays) {
@@ -503,9 +533,12 @@
 
       const totalSales = stats.totalSales;
       const earnings = Number(stats.totalEarnings || 0).toFixed(2) + "€";
+      const bestDay = computeBestDay(cachedSales);
 
       // Dashboard
       document.getElementById("statSales").textContent = totalSales;
+      document.getElementById("statCommission").textContent = Number(affiliate.commission_amount || 0).toFixed(2) + "€";
+      document.getElementById("statBestDay").textContent = bestDay;
       document.getElementById("statEarnings").textContent = earnings;
       renderBarChart(document.getElementById("dashboardChart"), buildDailySeries(cachedSales, 14));
 
