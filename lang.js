@@ -8,6 +8,9 @@ const I18N = {
     "nav.login": "Connexion",
     "nav.signup": "S'inscrire",
 
+    "access.member": "Espace Membre",
+    "access.admin": "Espace Admin",
+
     "hero.badge_prefix": "Programme de",
     "hero.badge_accent": "affiliation",
     "hero.big_title": "Programme d'affiliation",
@@ -111,6 +114,9 @@ const I18N = {
   en: {
     "nav.login": "Log in",
     "nav.signup": "Sign up",
+
+    "access.member": "Member Area",
+    "access.admin": "Admin Area",
 
     "hero.badge_prefix": "Referral",
     "hero.badge_accent": "program",
