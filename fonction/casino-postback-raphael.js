@@ -121,11 +121,12 @@ exports.handler = async (event) => {
       }
 
       await supabaseAdmin.from("visits").insert({
-        affiliate_id: affiliate ? affiliate.id : null,
-        referral_code: matchValue || "unknown",
-        external_transaction_id: transactionId,
-        link_type: matchValue === (affiliate && affiliate.tracking_slug_direct) ? "direct" : "roulette",
-      });
+  affiliate_id: affiliate ? affiliate.id : null,
+  referral_code: matchValue || "unknown",
+  external_transaction_id: transactionId,
+  link_type: matchValue === (affiliate && affiliate.tracking_slug_direct) ? "direct" : "roulette",
+  source: "registration",              
+});
 
       return { statusCode: 200, body: "OK" };
     }
