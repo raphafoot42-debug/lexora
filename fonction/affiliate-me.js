@@ -54,13 +54,13 @@ exports.handler = async (event) => {
       return { statusCode: 401, body: "Unauthorized" };
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const { data: affiliate, error: profileError } = await supabaseAdmin
+  .from("affiliates")
+  .select("id, prenom, link_roulette, link_direct, tracking_slug_roulette, tracking_slug_direct, commission_amount, statut, created_at")
+  .eq("id", payload.affiliateId)
+  .single();
 
-    const { data: affiliate, error: profileError } = await supabaseAdmin
-      .from("affiliates")
-      .select("id, prenom, link_roulette, link_direct, commission_amount, statut, created_at")
-      .eq("id", payload.affiliateId)
-      .single();
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     if (profileError || !affiliate) {
       return { statusCode: 404, body: "Affiliate not found" };
