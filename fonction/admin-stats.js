@@ -63,7 +63,7 @@ exports.handler = async (event) => {
 
     const [{ data: visits, error: visitsError }, { data: sales, error: salesError }] = await Promise.all([
       supabaseAdmin.from("visits").select("created_at").gte("created_at", since.toISOString()),
-      supabaseAdmin.from("sales").select("created_at, amount, commission").gte("created_at", since.toISOString()),
+      supabaseAdmin.from("sales").select("created_at, montant, commission").gte("created_at", since.toISOString()),
     ]);
 
     if (visitsError || salesError) {
@@ -76,11 +76,11 @@ exports.handler = async (event) => {
     const { count: totalVisitsAllTime } = await supabaseAdmin
       .from("visits")
       .select("*", { count: "exact", head: true });
-    const { data: allSales } = await supabaseAdmin.from("sales").select("amount, commission");
+    const { data: allSales } = await supabaseAdmin.from("sales").select("montant, commission");
 
     const totalSales = allSales ? allSales.length : 0;
     const totalOwed = allSales ? allSales.reduce((sum, s) => sum + Number(s.commission || 0), 0) : 0;
-    const totalRevenue = allSales ? allSales.reduce((sum, s) => sum + Number(s.amount || 0), 0) : 0;
+    const totalRevenue = allSales ? allSales.reduce((sum, s) => sum + Number(s.montant || 0), 0) : 0;
 
     // Série journalière sur la fenêtre de 90 jours (pour le graphique)
     const dayMap = {};
@@ -101,7 +101,7 @@ exports.handler = async (event) => {
       if (dayMap[key]) {
         dayMap[key].sales += 1;
         dayMap[key].owed += Number(s.commission || 0);
-        dayMap[key].revenue += Number(s.amount || 0);
+        dayMap[key].revenue += Number(s.montant || 0);
       }
     });
 
