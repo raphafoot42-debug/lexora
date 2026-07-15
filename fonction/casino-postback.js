@@ -159,7 +159,7 @@ await supabaseAdmin.from("visits").insert({
       .from("sales")
       .insert({
         affiliate_id: affiliate ? affiliate.id : null,
-        amount: amountPaidEur,
+        montant: amountPaidEur,
         commission,
         manager: affiliate ? affiliate.manager : null,
         manager_commission: managerCommission,
