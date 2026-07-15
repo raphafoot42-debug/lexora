@@ -119,8 +119,8 @@ exports.handler = async (event) => {
       if (existingVisit) {
         return { statusCode: 200, body: "OK (already processed)" };
       }
-
-      await supabaseAdmin.from("visits").insert({
+       
+await supabaseAdmin.from("visits").insert({                                                                                                                                                                                                                                                                                                                                              
   affiliate_id: affiliate ? affiliate.id : null,
   referral_code: matchValue || "unknown",
   external_transaction_id: transactionId,
@@ -159,7 +159,7 @@ exports.handler = async (event) => {
       .from("sales")
       .insert({
         affiliate_id: affiliate ? affiliate.id : null,
-        amount: amountPaidEur,
+        montant: amountPaidEur,
         commission,
         manager: affiliate ? affiliate.manager : null,
         manager_commission: managerCommission,
