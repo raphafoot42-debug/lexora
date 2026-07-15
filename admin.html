@@ -141,6 +141,7 @@
           <div class="stat-value gradient-text" id="globalStatRevenue">—</div>
         </div>
       </div>
+      <div class="text-secondary" style="font-size:12px; margin:-8px 0 16px;" id="globalStatPeriodLabel">Total ventes / dû / gagné : depuis le début</div>
 
       <div class="card chart-card">
         <div class="chart-card-header">
@@ -429,18 +430,21 @@
         method: "POST",
         headers: adminHeaders(),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const label = document.getElementById("globalStatPeriodLabel");
+        if (label) label.textContent = `Erreur de chargement (${res.status}).`;
+        console.error("admin-stats a échoué :", res.status, await res.text().catch(() => ""));
+        return;
+      }
 
-      const { totals, daily } = await res.json();
+      const { daily } = await res.json();
       cachedGlobalDaily = daily || [];
-
-      document.getElementById("globalStatSales").textContent = totals.totalSales;
-      document.getElementById("globalStatOwed").textContent = totals.totalOwed.toFixed(2) + "€";
-      document.getElementById("globalStatRevenue").textContent = totals.totalRevenue.toFixed(2) + "€";
 
       renderGlobalChart();
     } catch (err) {
       console.error(err);
+      const label = document.getElementById("globalStatPeriodLabel");
+      if (label) label.textContent = "Erreur réseau.";
     }
   }
 
@@ -452,11 +456,23 @@
     earnings: (v) => `${Number(v).toFixed(2)}€ gagné(s)`,
   };
 
+  const GLOBAL_PERIOD_LABELS = { day: "aujourd'hui", week: "cette semaine", month: "ce mois-ci" };
+
+  function updateGlobalStatCards() {
+    const p = computePeriodStats(cachedGlobalDaily, currentGlobalPeriod);
+    document.getElementById("globalStatSales").textContent = p.sales;
+    document.getElementById("globalStatOwed").textContent = Number(p.owed).toFixed(2) + "€";
+    document.getElementById("globalStatRevenue").textContent = Number(p.revenue).toFixed(2) + "€";
+    document.getElementById("globalStatPeriodLabel").textContent =
+      `Total ventes / dû / gagné : ${GLOBAL_PERIOD_LABELS[currentGlobalPeriod]}`;
+  }
+
   function renderGlobalChart() {
     const source = currentGlobalPeriod === "day" ? lastNDays(cachedGlobalDaily, 30) : aggregateByPeriod(cachedGlobalDaily, currentGlobalPeriod);
     const readout = document.getElementById("globalChartReadout");
     if (readout) readout.textContent = "Survole ou clique une barre pour voir le détail exact.";
     renderBarChart(document.getElementById("globalChart"), source, currentGlobalMetric, METRIC_FORMATTERS[currentGlobalMetric], readout);
+    updateGlobalStatCards();
   }
 
   function initGlobalPeriodTabs() {
@@ -490,6 +506,13 @@
     initGlobalPeriodTabs();
     loadGlobalStats();
     loadAffiliatesTable();
+    loadSpecialAffiliatePanel("noe", "noe-content");
+    loadSpecialAffiliatePanel("raphael", "raphael-content");
+  }
+
+  // Les panneaux Noé/Raphaël ne se rafraîchissent pas tout seuls : à appeler après
+  // chaque création/modification/suspension/suppression d'affilié.
+  function refreshManagerPanels() {
     loadSpecialAffiliatePanel("noe", "noe-content");
     loadSpecialAffiliatePanel("raphael", "raphael-content");
   }
@@ -546,6 +569,7 @@
       document.getElementById("newCommission").value = "";
       document.getElementById("newManager").value = "";
       loadAffiliatesTable();
+      refreshManagerPanels();
     } catch (err) {
       console.error(err);
       resultBox.textContent = "Erreur lors de la création.";
@@ -632,6 +656,7 @@
       });
       if (!res.ok) throw new Error("Échec");
       loadAffiliatesTable();
+      refreshManagerPanels();
     } catch (err) {
       console.error(err);
       alert("Erreur lors du changement de statut.");
@@ -649,6 +674,7 @@
       });
       if (!res.ok) throw new Error("Échec");
       loadAffiliatesTable();
+      refreshManagerPanels();
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la suppression.");
@@ -687,8 +713,6 @@
 
   function renderViewModal(box, affiliate, stats, sales, visits) {
     const rows = sales.map((s) => `<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.amount}€</td><td>${s.commission}€</td></tr>`).join("");
-    const totalVisits = (visits || []).length;
-    const conversion = totalVisits > 0 ? ((stats.totalSales / totalVisits) * 100).toFixed(1) + "%" : "—";
 
     box.innerHTML = `
       <div style="padding:28px;">
@@ -696,12 +720,13 @@
           <h2 style="font-size:20px; font-weight:700;">${affiliate.prenom}</h2>
           <button class="btn btn-outline btn-sm" id="closeModalBtn">Fermer</button>
         </div>
-        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;">
-          <div class="card"><div class="text-secondary" style="font-size:12px;">Visites</div><div style="font-size:22px; font-weight:800;">${totalVisits}</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:12px;">Ventes</div><div style="font-size:22px; font-weight:800;">${stats.totalSales}</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:12px;">Conversion</div><div style="font-size:22px; font-weight:800;">${conversion}</div></div>
-          <div class="card"><div class="text-secondary" style="font-size:12px;">À lui payer</div><div style="font-size:22px; font-weight:800;" class="gradient-text">${stats.totalEarnings}€</div></div>
+        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:8px;">
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Ventes</div><div style="font-size:22px; font-weight:800;" id="modalStatSales">—</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Commission par vente</div><div style="font-size:22px; font-weight:800;" id="modalStatCommission">—</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">Meilleur jour</div><div style="font-size:18px; font-weight:800;" id="modalStatBestDay">—</div></div>
+          <div class="card"><div class="text-secondary" style="font-size:12px;">À lui payer</div><div style="font-size:22px; font-weight:800;" class="gradient-text" id="modalStatEarnings">—</div></div>
         </div>
+        <div class="text-secondary" style="font-size:12px; margin:0 0 16px;" id="modalStatPeriodLabel">Ventes / À payer : depuis le début</div>
         <div class="field-inline" style="margin-bottom:10px;"><label>Lien Roulette</label><div class="link-box sensitive-blur" style="margin-top:4px;">${affiliate.link_roulette}</div></div>
         <div class="field-inline" style="margin-bottom:16px;"><label>Lien Direct</label><div class="link-box sensitive-blur" style="margin-top:4px;">${affiliate.link_direct}</div></div>
 
@@ -752,11 +777,41 @@
 
     let currentModalPeriod = "day";
     const modalReadoutEl = document.getElementById("modalChartReadout");
+    const MODAL_PERIOD_LABELS = { day: "aujourd'hui", week: "cette semaine", month: "ce mois-ci" };
+
+    // Meilleur jour : toutes dates confondues, pas seulement la période sélectionnée
+    // (cohérent avec le comportement du dashboard affilié).
+    function computeBestDayFromSales(salesRaw) {
+      if (!salesRaw || salesRaw.length === 0) return "—";
+      const counts = {};
+      salesRaw.forEach((s) => {
+        if (!s.created_at) return;
+        const key = new Date(s.created_at).toISOString().slice(0, 10);
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      const entries = Object.entries(counts);
+      if (entries.length === 0) return "—";
+      entries.sort((a, b) => b[1] - a[1]);
+      const [bestKey, bestCount] = entries[0];
+      const label = new Date(bestKey).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
+      return `${label} (${bestCount})`;
+    }
+
+    function updateModalStatCards() {
+      const p = computePeriodStats(modalDaily, currentModalPeriod);
+      document.getElementById("modalStatSales").textContent = p.sales;
+      document.getElementById("modalStatCommission").textContent = Number(affiliate.commission_amount || 0).toFixed(2) + "€";
+      document.getElementById("modalStatBestDay").textContent = computeBestDayFromSales(sales);
+      document.getElementById("modalStatEarnings").textContent = Number(p.earnings).toFixed(2) + "€";
+      document.getElementById("modalStatPeriodLabel").textContent =
+        `Ventes / À payer : ${MODAL_PERIOD_LABELS[currentModalPeriod]}`;
+    }
 
     function renderModalChart() {
       const source = currentModalPeriod === "day" ? lastNDays(modalDaily, 30) : aggregateByPeriod(modalDaily, currentModalPeriod);
       modalReadoutEl.textContent = "Survole ou clique une barre pour voir le détail exact.";
       renderBarChart(document.getElementById("modalChart"), source, "earnings", (v) => `${Number(v).toFixed(2)}€ gagné(s)`, modalReadoutEl);
+      updateModalStatCards();
     }
     renderModalChart();
 
@@ -833,6 +888,7 @@
       resultBox.style.color = "";
       resultBox.textContent = "Modifié ✔";
       loadAffiliatesTable();
+      refreshManagerPanels();
       setTimeout(closeAffiliateModal, 800);
     } catch (err) {
       console.error(err);
@@ -856,12 +912,13 @@
       });
 
       if (!res.ok) {
-        container.innerHTML = `<p class="text-secondary">Erreur de chargement.</p>`;
+        const detail = await res.text().catch(() => "");
+        console.error(`admin-manager-dashboard (${manager}) a échoué :`, res.status, detail);
+        container.innerHTML = `<p class="text-secondary">Erreur de chargement (${res.status}${detail ? " — " + detail : ""}).</p>`;
         return;
       }
 
       const { clients, stats, daily } = await res.json();
-      const conversion = stats.totalVisits > 0 ? stats.conversionRate.toFixed(1) + "%" : "—";
 
       const clientRows = clients
         .map((a) => {
@@ -1021,7 +1078,7 @@
       });
     } catch (err) {
       console.error(err);
-      container.innerHTML = `<p class="text-secondary">Erreur de chargement.</p>`;
+      container.innerHTML = `<p class="text-secondary">Erreur de chargement (${err.message || "voir console"}).</p>`;
     }
   }
 
