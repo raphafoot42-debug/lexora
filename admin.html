@@ -718,7 +718,7 @@
   }
 
   function renderViewModal(box, affiliate, stats, sales, visits) {
-    const rows = sales.map((s) => `<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.amount}€</td><td>${s.commission}€</td></tr>`).join("");
+    const rows = sales.map((s) => `<tr><td>${new Date(s.created_at).toLocaleDateString()}</td><td>${s.montant}€</td><td>${s.commission}€</td></tr>`).join("");
 
     box.innerHTML = `
       <div style="padding:28px;">
