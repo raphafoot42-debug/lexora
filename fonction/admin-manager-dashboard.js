@@ -97,7 +97,7 @@ exports.handler = async (event) => {
 
     const { data: sales, error: salesError } = await supabaseAdmin
       .from("sales")
-      .select("created_at, commission, amount, manager_commission")
+      .select("created_at, commission, montant, manager_commission")
       .in("affiliate_id", clientIds);
 
     if (visitsError || salesError) {
@@ -110,7 +110,7 @@ exports.handler = async (event) => {
     const totalSales = sales ? sales.length : 0;
     // totalOwed = ce qu'on doit verser aux affiliés (commission), totalRevenue = ce que les clients ont payé (le "prix")
     const totalOwed = sales ? sales.reduce((sum, s) => sum + Number(s.commission || 0), 0) : 0;
-    const totalRevenue = sales ? sales.reduce((sum, s) => sum + Number(s.amount || 0), 0) : 0;
+    const totalRevenue = sales ? sales.reduce((sum, s) => sum + Number(s.montant || 0), 0) : 0;
     const totalEarnings = sales ? sales.reduce((sum, s) => sum + Number(s.manager_commission || 0), 0) : 0;
     const conversionRate = totalVisits > 0 ? (totalSales / totalVisits) * 100 : 0;
 
@@ -133,7 +133,7 @@ exports.handler = async (event) => {
       if (dayMap[key]) {
         dayMap[key].sales += 1;
         dayMap[key].owed += Number(s.commission || 0);
-        dayMap[key].revenue += Number(s.amount || 0);
+        dayMap[key].revenue += Number(s.montant || 0);
         dayMap[key].earnings += Number(s.manager_commission || 0);
       }
     });
