@@ -83,7 +83,7 @@ exports.handler = async (event) => {
         statusCode: 200,
         body: JSON.stringify({
           clients: [],
-          stats: { totalVisits: 0, totalSales: 0, totalEarnings: 0, conversionRate: 0 },
+          stats: { totalVisits: 0, totalSales: 0, totalOwed: 0, totalRevenue: 0, totalEarnings: 0, conversionRate: 0, totalAffiliates: 0 },
           daily: [],
         }),
       };
