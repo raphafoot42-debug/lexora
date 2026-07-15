@@ -101,8 +101,9 @@ exports.handler = async (event) => {
       .in("affiliate_id", clientIds);
 
     if (visitsError || salesError) {
-      console.error("Erreur chargement stats manager :", visitsError || salesError);
-      return { statusCode: 500, body: "Failed to load stats" };
+      const realError = visitsError || salesError;
+      console.error("Erreur chargement stats manager :", realError);
+      return { statusCode: 500, body: `Failed to load stats — ${realError.message || JSON.stringify(realError)}` };
     }
 
     const totalVisits = visits ? visits.length : 0;
