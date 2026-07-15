@@ -7,6 +7,12 @@
 <link rel="stylesheet" href="themes.css" />
 <link rel="stylesheet" href="styles.css" />
 <style>
+  /* Le bouton "Flouter" (privacy.js) est fixé en haut à droite par défaut et
+     recouvre les pastilles de couleur du navbar admin. On le redescend en
+     bas à droite, uniquement sur cette page (dashboard.html n'a pas ce souci
+     et n'est pas touché). */
+  #privacyToggleBtn { top: auto !important; bottom: 20px !important; right: 20px !important; }
+
   .admin-tabs { display: flex; gap: 8px; margin-bottom: 32px; }
   .admin-tab { padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); cursor: pointer; }
   .admin-tab.active { background: var(--card-bg); color: var(--text-primary); border-color: rgba(var(--accent-1-rgb), 0.4); }
