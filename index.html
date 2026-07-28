@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AffiniX</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#05070d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AffiniX">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --blue:#3468e0; --cyan:#ffb84a; --bg:#05070d; --text:#e7ebf7; --dim:#8892b0;
+    --card:linear-gradient(180deg, rgba(23,32,55,0.66), rgba(12,17,30,0.55));
+    --border:rgba(96,156,248,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden; width:100%; max-width:100%;}
+  body{
+    margin:0; min-height:100vh; font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+    background:
+      radial-gradient(1300px 900px at 50% 20%, rgba(30,38,68,0.55), transparent 65%),
+      radial-gradient(1300px 700px at 8% -5%, rgba(52,104,224,0.30), transparent 60%),
+      radial-gradient(1100px 800px at 112% 8%, rgba(255,184,74,0.26), transparent 55%),
+      var(--bg);
+    color:var(--text); letter-spacing:-0.01em;
+  }
+  a{color:inherit;}
+  .orb{position:fixed;border-radius:999px;filter:blur(110px);pointer-events:none;z-index:0;opacity:.65;animation:drift 18s ease-in-out infinite;}
+  @keyframes drift{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(20px,-30px) scale(1.08);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  .anim{animation:fadeUp .55s cubic-bezier(.16,1,.3,1) both;}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .card{background:var(--card);border:1px solid var(--border);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:20px;transition:.35s ease;}
+  .card:hover{border-color:rgba(96,156,248,0.4);box-shadow:0 12px 40px -12px rgba(30,64,175,0.55);}
+  .btn-primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:700;border:none;cursor:pointer;box-shadow:0 8px 24px -8px rgba(52,104,224,.65);transition:.2s ease;font-size:14px;}
+  .btn-primary:hover{transform:translateY(-1px);filter:brightness(1.06);}
+  .btn-ghost{background:transparent;border:1px solid rgba(148,163,184,.2);color:#cbd5e1;cursor:pointer;font-weight:600;font-size:13px;border-radius:12px;}
+  input, select{background:rgba(8,12,22,.7);border:1px solid rgba(148,163,184,.18);color:var(--text);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;width:100%;}
+  input:focus, select:focus{outline:none;border-color:#5c9cf8;box-shadow:0 0 0 3px rgba(96,156,248,.18);}
+  label.field{display:flex;flex-direction:column;gap:6px;}
+  label.field span{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{text-align:left;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;padding:12px 16px;}
+  td{padding:14px 16px;border-top:1px solid rgba(148,163,184,.08);}
+  tr.row:hover{background:rgba(255,255,255,.02);cursor:pointer;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;}
+  .dot{width:6px;height:6px;border-radius:999px;}
+  .badge{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, rgba(52,104,224,.25), rgba(255,184,74,.15));border:1px solid rgba(96,156,248,.3);box-shadow:0 0 18px -2px rgba(96,156,248,.55);}
+  .kpi-val{font-size:32px;font-weight:800;color:#fff;}
+  .modal-bg{position:fixed;inset:0;background:rgba(4,6,12,.72);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;animation:fadeIn .2s ease both;}
+  .icon{width:17px;height:17px;stroke:#5c9cf8;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+  .grid-kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+  @media(min-width:900px){.grid-kpi{grid-template-columns:repeat(4,minmax(0,1fr));}}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(96,156,248,.25);border-radius:999px;}
+  .sidebar{width:256px;flex-shrink:0;display:none;flex-direction:column;gap:8px;padding:20px;border-right:1px solid rgba(96,156,248,.1);position:relative;z-index:10;}
+  @media(min-width:768px){.sidebar{display:flex;} .topbar-mobile{display:none !important;} .content{padding-top:32px !important;}}
+  .navitem{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:600;color:#cbd5e1;background:none;border:none;cursor:pointer;text-align:left;width:100%;transition:.2s ease;}
+  .navitem:hover{background:rgba(96,156,248,.08);}
+  .navitem.active{background:linear-gradient(90deg, rgba(52,104,224,.22), rgba(255,184,74,.06));border:1px solid rgba(96,156,248,.35);color:#bfe0ff;}
+  .topbar-mobile{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(5,7,13,.75);backdrop-filter:blur(18px);border-bottom:1px solid rgba(96,156,248,.12);}
+  .content{flex:1;position:relative;z-index:10;padding:16px;padding-top:76px;max-width:1120px;margin:0 auto;width:100%;}
+  .shell{display:flex;min-height:100vh;}
+  .err{color:#fca5a5;font-size:12px;font-weight:600;}
+  .ok{color:#6ee7b7;font-size:12px;font-weight:600;}
+  .muted{color:var(--dim);}
+  .mono{font-family:ui-monospace,monospace;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =====================================================================
+   AffiliateHub — site statique autonome (HTML/CSS/JS, sans backend)
+   =====================================================================
+   Stockage : localStorage du navigateur (clé "ah_data").
+   IMPORTANT — puisque ce site n'a pas de serveur, les données restent
+   dans le navigateur où elles ont été saisies. Un sous-affilié qui se
+   connecte depuis un autre appareil ne verra pas automatiquement les
+   données que l'admin a entrées sur son propre ordinateur. Utilise le
+   bouton "Exporter / Importer" dans Paramètres pour transférer les
+   données d'un appareil à un autre en attendant une vraie base de
+   données partagée (voir la discussion dans le chat).
+   ===================================================================== */
+
+const STORAGE_KEY = "ah_data";
+
+// Paliers de reward par défaut (repris du catalogue "Explode Partners").
+function defaultRewardTiers(){
+  return [
+    {id:"tier_10", ftd:10, amount:100},
+    {id:"tier_100", ftd:100, amount:900},
+    {id:"tier_500", ftd:500, amount:4000},
+    {id:"tier_1000", ftd:1000, amount:5000},
+    {id:"tier_2000", ftd:2000, amount:10000},
+    {id:"tier_3000", ftd:3000, amount:10000},
+    {id:"tier_4000", ftd:4000, amount:10000},
+    {id:"tier_5000", ftd:5000, amount:10000},
+  ];
+}
+function defaultMemberLinks(){
+  return { community:[], game:[], liens:[] };
+}
+// Convertit l'ancien format (un seul lien) vers le nouveau (plusieurs liens nommés).
+function migrateMemberLinks(db){
+  if(!db.memberLinks){ db.memberLinks = defaultMemberLinks(); return; }
+  const ml = db.memberLinks;
+  if(ml.community===undefined || ml.game===undefined){
+    const genId = ()=>"lnk_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    const community = ml.communityUrl ? [{id:genId(), label:"Communauté", url:ml.communityUrl}] : [];
+    const game = ml.gameUrl ? [{id:genId(), label:ml.gameLabel||"Lancer le jeu", url:ml.gameUrl}] : [];
+    db.memberLinks = { community, game, liens: ml.liens||[] };
+  }
+  if(db.memberLinks.liens===undefined) db.memberLinks.liens = [];
+}
+
+// URL du serveur partagé (celui qu'on a déployé sur Render). Toutes les
+// données (affiliés, stats, réglages) y sont sauvegardées en vrai, pas
+// seulement dans ce navigateur — donc visibles depuis n'importe quel
+// appareil. Le navigateur garde une copie locale comme secours si le
+// serveur est temporairement injoignable (ex : mise en veille Render).
+const REMOTE_URL = (function(){
+  try{
+    const cached = JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    return (cached.syncConfig && cached.syncConfig.apiUrl) || "https://affinix-postback-server.onrender.com";
+  }catch(e){ return "https://affinix-postback-server.onrender.com"; }
+})();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed.mainTrackingLink===undefined) parsed.mainTrackingLink="";
+      if(!parsed.syncConfig) parsed.syncConfig={apiUrl:"",apiKey:""};
+      if(parsed.referralBonusPerFtd===undefined) parsed.referralBonusPerFtd=5;
+      if(parsed.defaultBaseLink===undefined) parsed.defaultBaseLink="";
+      if(parsed.defaultBaseLinkLabel===undefined) parsed.defaultBaseLinkLabel="Signup";
+      if(parsed.defaultCommissionPerFtd===undefined) parsed.defaultCommissionPerFtd = parsed.defaultCommissionPct!==undefined ? 0 : 30;
+      (parsed.affiliates||[]).forEach(a=>{ if(a.commissionPerFtd===undefined) a.commissionPerFtd = a.commissionPct!==undefined ? 0 : 30; });
+      if(parsed.allowSelfSignup===undefined) parsed.allowSelfSignup=true;
+      if(!parsed.pendingSignups) parsed.pendingSignups=[];
+      (parsed.affiliates||[]).forEach(a=>{ if(a.referredBy===undefined) a.referredBy=null; if(!a.messages) a.messages=[]; });
+      migrateMemberLinks(parsed);
+      if(!parsed.rewardTiers) parsed.rewardTiers=defaultRewardTiers();
+      return parsed;
+    }
+  }catch(e){ console.error(e); }
+  return { affiliates: [], passcode: "2909", mainTrackingLink: "", syncConfig: { apiUrl: "", apiKey: "" }, referralBonusPerFtd: 5, defaultBaseLink: "", defaultBaseLinkLabel: "Signup", defaultCommissionPerFtd: 30, allowSelfSignup: true, pendingSignups: [], memberLinks: defaultMemberLinks(), rewardTiers: defaultRewardTiers() };
+}
+function saveData(){
+  DB.localEditedAt = Date.now();
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){ console.error(e); }
+  pushRemoteDB();
+}
+// Envoie la base complète au serveur partagé (sans jamais y inclure la
+// clé API en clair, pour ne pas l'exposer publiquement via /api/db).
+function pushRemoteDB(){
+  if(!REMOTE_URL || !DB.syncConfig || !DB.syncConfig.apiKey) return;
+  const payload = JSON.parse(JSON.stringify(DB));
+  payload.syncConfig = { apiUrl: (DB.syncConfig.apiUrl||REMOTE_URL), apiKey: "" };
+  fetch(REMOTE_URL+"/api/db", {
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":DB.syncConfig.apiKey},
+    body: JSON.stringify(payload)
+  }).catch(()=>{});
+}
+// Récupère la base partagée une fois au chargement, en conservant la
+// clé API déjà présente sur cet appareil (elle n'est jamais renvoyée
+// par le serveur).
+async function fetchRemoteDB(){
+  if(!REMOTE_URL) return;
+  try{
+    // Si on vient de modifier quelque chose localement il y a moins de 3 minutes
+    // (ex : un lien ajouté en Paramètres), on ne laisse pas une copie distante
+    // potentiellement plus ancienne écraser ce changement — on retente juste
+    // l'envoi vers le serveur au passage, au cas où le premier envoi aurait échoué.
+    if(DB.localEditedAt && (Date.now() - DB.localEditedAt < 180000)){
+      pushRemoteDB();
+      return;
+    }
+    const res = await fetch(REMOTE_URL+"/api/db");
+    if(!res.ok) return;
+    const { db } = await res.json();
+    if(!db){
+      // Le serveur n'a encore aucune donnée : on lui envoie notre copie
+      // locale actuelle pour l'initialiser (si on a la clé admin).
+      pushRemoteDB();
+      return;
+    }
+    const localSync = DB.syncConfig || {apiUrl:"",apiKey:""};
+    if(db.mainTrackingLink===undefined) db.mainTrackingLink="";
+    if(!db.syncConfig) db.syncConfig={apiUrl:"",apiKey:""};
+    if(db.referralBonusPerFtd===undefined) db.referralBonusPerFtd=5;
+    if(db.defaultBaseLink===undefined) db.defaultBaseLink="";
+    if(db.defaultBaseLinkLabel===undefined) db.defaultBaseLinkLabel="Signup";
+    if(db.defaultCommissionPerFtd===undefined) db.defaultCommissionPerFtd = db.defaultCommissionPct!==undefined ? 0 : 30;
+    (db.affiliates||[]).forEach(a=>{ if(a.commissionPerFtd===undefined) a.commissionPerFtd = a.commissionPct!==undefined ? 0 : 30; });
+    if(db.allowSelfSignup===undefined) db.allowSelfSignup=true;
+    if(!db.pendingSignups) db.pendingSignups=[];
+    (db.affiliates||[]).forEach(a=>{ if(a.referredBy===undefined) a.referredBy=null; if(!a.messages) a.messages=[]; });
+    migrateMemberLinks(db);
+    if(!db.rewardTiers) db.rewardTiers=defaultRewardTiers();
+    db.syncConfig = { apiUrl: db.syncConfig.apiUrl||localSync.apiUrl||REMOTE_URL, apiKey: localSync.apiKey||"" };
+    DB = db;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    render();
+  }catch(e){ /* serveur injoignable (ex: en veille) — on garde la copie locale */ }
+}
+
+/* ---------------- Notifications FTD ---------------- */
+const NOTIF_MEMBER_KEY = "affinix_notif_member";
+const NOTIF_ADMIN_KEY = "affinix_notif_admin";
+const FTD_BASELINE_KEY = "affinix_ftd_baseline";
+
+function notifSupported(){ return typeof Notification !== "undefined"; }
+function notifPermission(){ return notifSupported() ? Notification.permission : "unsupported"; }
+function notifEnabled(key){ return notifSupported() && Notification.permission==="granted" && localStorage.getItem(key)==="1"; }
+
+async function toggleFtdNotifications(key){
+  if(!notifSupported()){ alert("Les notifications ne sont pas prises en charge sur cet appareil/navigateur."); return; }
+  if(notifEnabled(key)){
+    localStorage.setItem(key,"0");
+    render();
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if(perm==="granted"){
+    localStorage.setItem(key,"1");
+    primeFtdBaseline();
+    showFtdNotification("Notifications activées ✔", "Tu seras alerté dès qu'un nouveau FTD arrive.");
+    if(key===NOTIF_MEMBER_KEY && SESSION && SESSION.role==="member"){
+      subscribeToPush(SESSION.id).catch(()=>{});
+    }
+  } else {
+    localStorage.setItem(key,"0");
+  }
+  render();
+}
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g,"+").replace(/_/g,"/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
+}
+async function subscribeToPush(affiliateId){
+  if(!REMOTE_URL || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  const keyRes = await fetch(`${REMOTE_URL}/api/vapid-public-key`);
+  const { publicKey } = await keyRes.json();
+  if(!publicKey) return;
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+  }
+  await fetch(`${REMOTE_URL}/api/push-subscribe`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ affiliateId, subscription: sub })
+  });
+}
+
+function showFtdNotification(title, body){
+  try{
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.ready.then(reg=>{
+        if(reg && reg.showNotification) reg.showNotification(title, { body, icon:"icon-192.png", badge:"icon-192.png" });
+        else if(notifSupported()) new Notification(title, { body, icon:"icon-192.png" });
+      }).catch(()=>{ if(notifSupported()) new Notification(title, { body, icon:"icon-192.png" }); });
+    } else if(notifSupported()){
+      new Notification(title, { body, icon:"icon-192.png" });
+    }
+  }catch(e){ console.error(e); }
+}
+
+function getFtdBaseline(){
+  try{ return JSON.parse(localStorage.getItem(FTD_BASELINE_KEY)||"{}"); }catch(e){ return {}; }
+}
+function setFtdBaseline(obj){ try{ localStorage.setItem(FTD_BASELINE_KEY, JSON.stringify(obj)); }catch(e){} }
+// Enregistre l'état actuel des FTD sans déclencher de notification (appelé à l'activation).
+function primeFtdBaseline(){
+  const baseline = {};
+  (DB.affiliates||[]).forEach(a=>{ baseline[a.id] = sumStats(a.dailyStats).ftd; });
+  setFtdBaseline(baseline);
+}
+
+function checkFtdNotifications(){
+  if(!DB || !DB.affiliates) return;
+  const memberOn = notifEnabled(NOTIF_MEMBER_KEY) && SESSION && SESSION.role==="member";
+  const adminOn = notifEnabled(NOTIF_ADMIN_KEY) && SESSION && SESSION.role==="admin";
+  if(!memberOn && !adminOn) return;
+  const baseline = getFtdBaseline();
+  const firstRun = Object.keys(baseline).length===0;
+  const newBaseline = {};
+  DB.affiliates.forEach(a=>{
+    const ftd = sumStats(a.dailyStats).ftd;
+    newBaseline[a.id] = ftd;
+    if(firstRun) return;
+    const prev = baseline[a.id];
+    if(prev===undefined || ftd<=prev) return;
+    const diff = ftd - prev;
+    if(adminOn){
+      showFtdNotification("Nouveau FTD 🎉", `${a.name} vient de générer ${diff} FTD supplémentaire${diff>1?"s":""}.`);
+    }
+    if(memberOn && SESSION.id===a.id){
+      showFtdNotification("Nouveau FTD 🎉", `Tu viens de générer ${diff} nouveau${diff>1?"x":""} FTD !`);
+    }
+  });
+  setFtdBaseline(newBaseline);
+}
+
+setInterval(()=>{ fetchRemoteDB().then(checkFtdNotifications); }, 60000);
+
+function notifButtonHtml(key){
+  const on = notifEnabled(key);
+  const blocked = notifSupported() && Notification.permission==="denied";
+  if(blocked){
+    return `<span title="Notifications bloquées dans les réglages du navigateur" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)">${icon('bell',14,'#8892b0')} Notifications bloquées</span>`;
+  }
+  return `<button class="btn-ghost" style="padding:8px 14px;font-size:13px;display:flex;align-items:center;gap:6px;${on?'color:#6ee7b7;border-color:rgba(52,211,153,.3)':''}" onclick="toggleFtdNotifications('${key}')">${icon('bell',14,on?'#6ee7b7':'#5c9cf8')} ${on?"Notifications activées":"Activer les notifications"}</button>`;
+}
+
+
+let DB = loadData();
+let SESSION = null; // {role:'admin'} or {role:'member', id}
+let VIEW = "overview";
+let charts = {};
+const urlRefCode = new URLSearchParams(location.search).get("ref") || "";
+
+/* ---------------- utils ---------------- */
+const uid = (p="aff") => p+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const todayStr = () => new Date().toISOString().slice(0,10);
+const eur = n => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(n)||0);
+const numf = n => new Intl.NumberFormat('fr-FR').format(Number(n)||0);
+const pctf = n => (Number(n)||0).toFixed(1)+"%";
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function isoWeekStart(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  const day = (d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  return d.toISOString().slice(0,10);
+}
+const monthKey = d => d.slice(0,7);
+function labelForKey(key, period){
+  if(period==="day"||period==="week"){ const d=new Date(key+"T00:00:00"); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); }
+  const [y,m]=key.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('fr-FR',{month:'short',year:'2-digit'});
+}
+function sumStats(list){
+  return list.reduce((a,s)=>{a.clicks+=+s.clicks||0;a.signups+=+s.signups||0;a.ftd+=+s.ftd||0;a.deposits+=+s.deposits||0;a.revenue+=+s.revenue||0;return a;},{clicks:0,signups:0,ftd:0,deposits:0,revenue:0});
+}
+function groupStats(list, period){
+  const map=new Map();
+  for(const s of list){
+    const key = period==="day"?s.date:period==="week"?isoWeekStart(s.date):monthKey(s.date);
+    const cur = map.get(key)||{key,clicks:0,signups:0,ftd:0,deposits:0,revenue:0};
+    cur.clicks+=+s.clicks||0;cur.signups+=+s.signups||0;cur.ftd+=+s.ftd||0;cur.deposits+=+s.deposits||0;cur.revenue+=+s.revenue||0;
+    map.set(key,cur);
+  }
+  return Array.from(map.values()).sort((a,b)=>a.key.localeCompare(b.key)).map(r=>({...r,label:labelForKey(r.key,period)}));
+}
+function findAffiliate(id){ return DB.affiliates.find(a=>a.id===id); }
+
+/* ---------------- parrainage : helpers ---------------- */
+function filleulsOf(sponsorId){ return DB.affiliates.filter(a=>a.referredBy===sponsorId); }
+function referralEarningsFor(filleul){ return sumStats(filleul.dailyStats).ftd * (DB.referralBonusPerFtd||0); }
+function totalReferralEarnings(sponsorId){ return filleulsOf(sponsorId).reduce((acc,f)=>acc+referralEarningsFor(f),0); }
+function referralHistoryFor(sponsorId){
+  const rows=[];
+  filleulsOf(sponsorId).forEach(f=>{
+    f.dailyStats.forEach(s=>{
+      if(+s.ftd>0) rows.push({date:s.date, filleulName:f.name, ftd:+s.ftd, amount:+s.ftd*(DB.referralBonusPerFtd||0)});
+    });
+  });
+  return rows.sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+/* ---------------- messagerie interne (membre <-> admin) ---------------- */
+function unreadForAdmin(a){ return (a.messages||[]).filter(m=>m.from==="member" && !m.readByAdmin).length; }
+function unreadForMember(a){ return (a.messages||[]).filter(m=>m.from==="admin" && !m.readByMember).length; }
+function totalUnreadForAdmin(){ return DB.affiliates.reduce((n,a)=>n+unreadForAdmin(a),0); }
+function sendMessage(affiliateId, from, text){
+  const a = findAffiliate(affiliateId);
+  if(!a || !text.trim()) return;
+  if(!a.messages) a.messages=[];
+  a.messages.push({ id: uid("msg"), from, text: text.trim(), at: new Date().toISOString(), readByAdmin: from==="admin", readByMember: from==="member" });
+  saveData();
+}
+function markReadByAdmin(a){ if(!unreadForAdmin(a)) return; (a.messages||[]).forEach(m=>{ if(m.from==="member") m.readByAdmin=true; }); saveData(); }
+function markReadByMember(a){ if(!unreadForMember(a)) return; (a.messages||[]).forEach(m=>{ if(m.from==="admin") m.readByMember=true; }); saveData(); }
+function fmtMsgTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})+" · "+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+function messageThreadHtml(a, forRole){
+  const msgs = a.messages||[];
+  return `
+    <div style="display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow-y:auto;padding:4px 2px 4px 0" id="msgThreadScroll">
+      ${msgs.length ? msgs.map(m=>{
+        const mine = (forRole==="admin" && m.from==="admin") || (forRole==="member" && m.from==="member");
+        return `<div style="display:flex;justify-content:${mine?'flex-end':'flex-start'}">
+          <div style="max-width:78%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.4;${mine
+            ? 'background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;border-bottom-right-radius:4px'
+            : 'background:rgba(148,163,184,.1);color:var(--text);border:1px solid rgba(148,163,184,.14);border-bottom-left-radius:4px'}">
+            <div>${esc(m.text)}</div>
+            <div style="font-size:10px;margin-top:4px;opacity:.65">${fmtMsgTime(m.at)}</div>
+          </div>
+        </div>`;
+      }).join("") : `<p class="muted" style="text-align:center;padding:24px 0">Aucun message pour le moment. Écris le premier !</p>`}
+    </div>`;
+}
+const ICONS = {
+  lightbulb:'<line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A6 6 0 1 0 8 5.5c.76.76 1.23 1.52 1.41 2.5"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  userCheck:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>',
+  dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  wallet:'<path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>',
+  click:'<path d="M9 9l6.35 14.5 1.9-6.2 6.2-1.9L9 9z"/><path d="M9 9L3 3"/>',
+  userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>',
+  trend:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  percent:'<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  layout:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  pencil:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  power:'<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  arrowleft:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+  menu:'<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  gift:'<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  send:'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  game:'<rect x="3" y="3" width="18" height="18" rx="5"/><polygon points="10 8 16 12 10 16 10 8"/>',
+};
+function icon(name, size=17, color="#5c9cf8"){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
+/* ---------------- shared UI pieces ---------------- */
+function statCard(iconName,label,value,delay=0,sub=""){
+  return `<div class="card anim" style="padding:22px;display:flex;flex-direction:column;gap:10px;animation-delay:${delay}ms">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">${esc(label)}</span>
+    <div class="kpi-val">${value}</div>
+    ${sub?`<div style="font-size:12px;color:var(--dim)">${esc(sub)}</div>`:""}
+  </div>`;
+}
+function statusPill(status){
+  const active = status==="active";
+  const c = active?"#6ee7b7":"#fca5a5"; const bg = active?"rgba(52,211,153,.1)":"rgba(248,113,113,.1)"; const bd= active?"rgba(52,211,153,.3)":"rgba(248,113,113,.3)";
+  return `<span class="pill" style="color:${c};background:${bg};border:1px solid ${bd}"><span class="dot" style="background:${active?"#34d399":"#f87171"};box-shadow:0 0 10px ${active?"#34d399":"#f87171"}"></span>${active?"Actif":"Suspendu"}</span>`;
+}
+function periodToggle(current, onChangeFn){
+  const opts=[["day","Jour"],["week","Semaine"],["month","Mois"]];
+  return `<div style="display:flex;gap:4px;background:rgba(8,12,22,.7);border:1px solid rgba(148,163,184,.18);border-radius:999px;padding:4px">
+    ${opts.map(([k,l])=>`<button onclick="${onChangeFn}('${k}')" style="padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:none;cursor:pointer;${current===k?`background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f`:`background:none;color:var(--dim)`}">${l}</button>`).join("")}
+  </div>`;
+}
+function renderAreaChart(canvasId, data, key="revenue", formatter=eur){
+  requestAnimationFrame(()=>{
+    const el = document.getElementById(canvasId);
+    if(!el) return;
+    if(charts[canvasId]) charts[canvasId].destroy();
+    const grad = el.getContext('2d').createLinearGradient(0,0,0,260);
+    grad.addColorStop(0,'rgba(255,184,74,0.55)'); grad.addColorStop(1,'rgba(52,104,224,0)');
+    charts[canvasId] = new Chart(el, {
+      type:'line',
+      data:{ labels:data.map(d=>d.label), datasets:[{ data:data.map(d=>d[key]), borderColor:'#ffb84a', borderWidth:2.5, backgroundColor:grad, fill:true, tension:0.4, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#ffb84a' }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'rgba(9,13,24,.92)', borderColor:'rgba(96,156,248,.3)', borderWidth:1, titleColor:'#5c9cf8', bodyColor:'#e7ebf7', padding:10, callbacks:{ label:(ctx)=>formatter(ctx.parsed.y) } } },
+        scales:{ x:{ grid:{ color:'rgba(148,163,184,.12)', drawTicks:false }, ticks:{ color:'#7d879c', font:{size:11} } },
+                 y:{ grid:{ color:'rgba(148,163,184,.12)', drawTicks:false }, ticks:{ color:'#7d879c', font:{size:11} } } }
+      }
+    });
+  });
+}
+
+/* ---------------- rendering: login ---------------- */
+let loginTab = urlRefCode ? "register" : "member";
+let signupSuccess = "";
+function renderLogin(err=""){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative">
+      <div class="orb" style="width:480px;height:480px;top:-160px;left:-160px;background:#3468e0"></div>
+      <div class="orb" style="width:420px;height:420px;bottom:-140px;right:-120px;background:#ffb84a;animation-delay:3s"></div>
+      <div style="position:relative;z-index:10;width:100%;max-width:420px">
+        <div class="anim" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px">
+          <span style="font-size:20px;font-weight:800">AffiniX</span>
+        </div>
+        <div class="card anim" style="padding:8px;animation-delay:80ms">
+          <div style="display:flex;gap:4px;padding:4px">
+            <button onclick="setLoginTab('member')" class="navitem" style="flex:1;justify-content:center;font-size:13px;${loginTab==='member'?'background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f':''}">Espace membre</button>
+            ${DB.allowSelfSignup?`<button onclick="setLoginTab('register')" class="navitem" style="flex:1;justify-content:center;font-size:13px;${loginTab==='register'?'background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f':''}">S'inscrire</button>`:""}
+            <button onclick="setLoginTab('admin')" class="navitem" style="flex:1;justify-content:center;font-size:13px;${loginTab==='admin'?'background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f':''}">Espace admin</button>
+          </div>
+          <div style="padding:24px 20px 20px">
+            ${loginTab==='member' ? `
+              <form onsubmit="return submitMemberLogin(event)" style="display:flex;flex-direction:column;gap:16px">
+                <label class="field"><span>Nom</span><input id="loginName" placeholder="Votre nom" autocomplete="off"/></label>
+                <label class="field"><span>Code d'accès</span><input id="loginCode" type="password" placeholder="Votre code" autocomplete="off"/></label>
+                ${err?`<p class="err">${esc(err)}</p>`:""}
+                <button class="btn-primary" style="border-radius:12px;padding:13px;margin-top:4px">Se connecter</button>
+              </form>` : loginTab==='register' ? `
+              <form onsubmit="return submitSelfSignup(event)" style="display:flex;flex-direction:column;gap:16px">
+                <label class="field"><span>Ton nom</span><input id="regName" placeholder="Ex : Hugo" autocomplete="off"/></label>
+                <label class="field"><span>Choisis ton code d'accès</span><input id="regCode" placeholder="Ex : hugo92" autocomplete="off"/></label>
+                <label class="field"><span>Code de parrainage (optionnel)</span><input id="regRef" value="${esc(urlRefCode)}" placeholder="Code de la personne qui t'a invité"/></label>
+                <p class="muted" style="font-size:12px;margin:-6px 0 0">Ta demande sera envoyée à l'administrateur, qui devra la valider avant que tu puisses te connecter.</p>
+                ${err?`<p class="err">${esc(err)}</p>`:""}
+                ${signupSuccess?`<p class="ok">${esc(signupSuccess)}</p>`:""}
+                <button class="btn-primary" style="border-radius:12px;padding:13px;margin-top:4px">Envoyer ma demande</button>
+              </form>` : `
+              <form onsubmit="return submitAdminLogin(event)" style="display:flex;flex-direction:column;gap:16px">
+                <label class="field"><span>Code d'accès administrateur</span><input id="adminCode" type="password" placeholder="••••••••" autocomplete="off"/></label>
+                ${err?`<p class="err">${esc(err)}</p>`:""}
+                <button class="btn-primary" style="border-radius:12px;padding:13px;margin-top:4px">Accéder au tableau de bord</button>
+              </form>`}
+          </div>
+        </div>
+        <p style="text-align:center;font-size:12px;color:#48506b;margin-top:20px">Données stockées localement dans ce navigateur (voir Paramètres → Export/Import).</p>
+      </div>
+    </div>`;
+}
+function setLoginTab(t){ loginTab=t; signupSuccess=""; renderLogin(); }
+async function submitSelfSignup(e){
+  e.preventDefault();
+  const name = document.getElementById("regName").value.trim();
+  const code = document.getElementById("regCode").value.trim();
+  const refInput = document.getElementById("regRef").value.trim();
+  if(!name || !code) return renderLogin("Nom et code d'accès sont obligatoires."), false;
+  const taken = DB.affiliates.some(a=>a.code.toLowerCase()===code.toLowerCase()) || (DB.pendingSignups||[]).some(p=>p.code.toLowerCase()===code.toLowerCase());
+  if(taken) return renderLogin("Ce code d'accès est déjà pris, choisis-en un autre."), false;
+
+  if(REMOTE_URL){
+    try{
+      const res = await fetch(REMOTE_URL+"/api/signup", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({name, code, ref: refInput})
+      });
+      const data = await res.json();
+      if(!res.ok){ return renderLogin(data.error||"Inscription impossible pour le moment."), false; }
+      DB.pendingSignups = DB.pendingSignups||[];
+      DB.pendingSignups.unshift(data.request);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+      signupSuccess = "Ta demande a été envoyée ✔ L'administrateur doit la valider avant que tu puisses te connecter.";
+      loginTab = "member";
+      renderLogin();
+      return false;
+    }catch(err){
+      return renderLogin("Le serveur est momentanément injoignable (il peut mettre jusqu'à 1 minute à se réveiller). Réessaie dans un instant."), false;
+    }
+  }
+
+  DB.pendingSignups = DB.pendingSignups||[];
+  DB.pendingSignups.unshift({id:uid(), name, code, ref:refInput, requestedAt:new Date().toISOString()});
+  saveData();
+  signupSuccess = "Ta demande a été envoyée ✔ L'administrateur doit la valider avant que tu puisses te connecter.";
+  loginTab = "member";
+  renderLogin();
+  return false;
+}
+function approveSignup(reqId){
+  const req = (DB.pendingSignups||[]).find(p=>p.id===reqId);
+  if(!req) return;
+  if(!DB.defaultBaseLink){ alert("Renseigne d'abord un \"Lien de base pour les inscrits\" dans Paramètres avant de valider."); return; }
+  let referredBy = null;
+  if(req.ref){ const sponsor = DB.affiliates.find(a=>a.code.toLowerCase()===req.ref.toLowerCase()); if(sponsor) referredBy = sponsor.id; }
+  DB.affiliates.unshift({
+    id: uid(), name: req.name, code: req.code,
+    baseLinks: [{label: DB.defaultBaseLinkLabel||"Signup", url: DB.defaultBaseLink}],
+    commissionPerFtd: DB.defaultCommissionPerFtd||0,
+    referredBy, status:"active", createdAt: todayStr(), dailyStats: [], messages: []
+  });
+  DB.pendingSignups = DB.pendingSignups.filter(p=>p.id!==reqId);
+  saveData(); render();
+}
+function rejectSignup(reqId){
+  if(!confirm("Refuser cette demande d'inscription ?")) return;
+  DB.pendingSignups = (DB.pendingSignups||[]).filter(p=>p.id!==reqId);
+  saveData(); render();
+}
+function submitMemberLogin(e){
+  e.preventDefault();
+  const name = document.getElementById("loginName").value.trim();
+  const code = document.getElementById("loginCode").value.trim();
+  const match = DB.affiliates.find(a=>a.name.trim().toLowerCase()===name.toLowerCase() && a.code===code);
+  if(!match) return renderLogin("Nom ou code incorrect."), false;
+  if(match.status!=="active") return renderLogin("Ce compte est actuellement suspendu."), false;
+  SESSION = {role:"member", id:match.id}; VIEW="overview"; render();
+  return false;
+}
+function submitAdminLogin(e){
+  e.preventDefault();
+  const code = document.getElementById("adminCode").value.trim();
+  if(code===DB.passcode){ SESSION={role:"admin"}; VIEW="overview"; render(); }
+  else renderLogin("Code d'accès incorrect.");
+  return false;
+}
+function logout(){ SESSION=null; render(); }
+
+/* ---------------- shell (sidebar + topbar) ---------------- */
+let mobileMenuOpen = false;
+function navItemHtml(n, extraOnclick=""){
+  if(n.href){
+    return `<a href="${esc(n.href)}" target="_blank" rel="noopener" onclick="${extraOnclick}" class="navitem" style="text-decoration:none">${icon(n.icon)}${esc(n.label)}</a>`;
+  }
+  return `<button class="navitem ${VIEW===n.key?'active':''}" onclick="${extraOnclick}setView('${n.key}')">${icon(n.icon)}${esc(n.label)}${n.badge?`<span class="mono" style="margin-left:auto;background:#eab308;color:#04101f;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:800">${n.badge}</span>`:""}</button>`;
+}
+function shell(navItems, activeName, roleLabel, contentHtml){
+  return `
+  <div class="shell">
+    <div class="orb" style="width:500px;height:500px;top:-200px;left:20%;background:#3468e0"></div>
+    <div class="orb" style="width:420px;height:420px;bottom:-160px;right:-100px;background:#ffb84a;animation-delay:4s"></div>
+    <aside class="sidebar">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 8px;margin-bottom:16px">
+        <span style="font-weight:800">AffiniX</span>
+      </div>
+      ${navItems.map(n=>navItemHtml(n)).join("")}
+      <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
+        <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:rgba(96,156,248,.15);color:#5c9cf8">${esc((activeName||"?")[0].toUpperCase())}</div>
+          <div style="min-width:0">
+            <p style="font-size:11px;color:var(--dim);margin:0 0 2px">${roleLabel}</p>
+            <p style="font-size:14px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(activeName)}</p>
+          </div>
+        </div>
+        <button class="navitem" onclick="logout()">${icon('logout',16)} Déconnexion</button>
+      </div>
+    </aside>
+    <div class="topbar-mobile">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-weight:700;font-size:14px">AffiniX</span>
+      </div>
+      <button onclick="toggleMobileMenu()" style="background:rgba(96,156,248,.1);border:none;border-radius:10px;padding:8px;cursor:pointer">${icon('menu',18,'#e7ebf7')}</button>
+    </div>
+    ${mobileMenuOpen?`
+    <div onclick="toggleMobileMenu()" style="position:fixed;inset:0;z-index:20;background:rgba(5,7,13,.96);animation:fadeIn .2s ease both">
+      <div style="padding-top:80px;padding-left:20px;padding-right:20px;display:flex;flex-direction:column;gap:8px" onclick="event.stopPropagation()">
+        ${navItems.map(n=>navItemHtml(n, "toggleMobileMenu();")).join("")}
+        <button class="navitem" style="margin-top:16px" onclick="toggleMobileMenu();logout()">${icon('logout',16)} Déconnexion</button>
+      </div>
+    </div>`:""}
+    <main class="content">${contentHtml}</main>
+  </div>`;
+}
+function toggleMobileMenu(){ mobileMenuOpen=!mobileMenuOpen; render(); }
+function setView(v){ VIEW=v; render(); }
+
+/* ---------------- ADMIN: overview ---------------- */
+let adminPeriod = "day";
+function adminOverviewHtml(){
+  const all = DB.affiliates.flatMap(a=>a.dailyStats);
+  const t = sumStats(all);
+  const commissionsDue = DB.affiliates.reduce((acc,a)=>acc+sumStats(a.dailyStats).ftd*(a.commissionPerFtd||0),0);
+  const activeCount = DB.affiliates.filter(a=>a.status==="active").length;
+  const chartData = groupStats(all, adminPeriod);
+  return `
+    <div class="anim" style="margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;margin:0">Vue d'ensemble</h1>
+        <p class="muted" style="margin:6px 0 0;font-size:14px">Performance globale de votre réseau de sous-affiliés</p>
+      </div>
+      ${notifButtonHtml(NOTIF_ADMIN_KEY)}
+    </div>
+    <div class="grid-kpi" style="margin-bottom:20px">
+      ${statCard('users','Sous-affiliés', DB.affiliates.length, 0)}
+      ${statCard('userCheck','Actifs', activeCount, 60)}
+      ${statCard('dollar','Revenus générés', eur(t.revenue), 120)}
+      ${statCard('wallet','Commissions à payer', eur(commissionsDue), 180)}
+    </div>
+    <div class="card anim" style="padding:22px;margin-bottom:20px;animation-delay:220ms">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px">
+        <div><h2 style="font-size:17px;font-weight:700;margin:0">Revenus dans le temps</h2><p class="muted" style="font-size:12px;margin:4px 0 0">Tous sous-affiliés confondus</p></div>
+        ${periodToggle(adminPeriod,'setAdminPeriod')}
+      </div>
+      ${chartData.length? `<div style="height:260px"><canvas id="adminChart"></canvas></div>` : `<div style="height:200px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px">Aucune donnée pour le moment.</div>`}
+    </div>
+    <div class="grid-2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="card anim" style="padding:18px;display:flex;align-items:center;gap:12px;animation-delay:300ms">${icon('userplus',18)}<div><p class="muted" style="font-size:12px;margin:0">Inscriptions</p><p style="font-weight:700;margin:2px 0 0">${numf(t.signups)}</p></div></div>
+      <div class="card anim" style="padding:18px;display:flex;align-items:center;gap:12px;animation-delay:340ms">${icon('trend',18)}<div><p class="muted" style="font-size:12px;margin:0">FTD</p><p style="font-weight:700;margin:2px 0 0">${numf(t.ftd)}</p></div></div>
+    </div>
+  `;
+}
+function setAdminPeriod(p){ adminPeriod=p; render(); }
+
+/* ---------------- ADMIN: affiliates list ---------------- */
+let affQuery=""; let detailId=null; let modalState=null; let copiedId=null;
+function adminAffiliatesHtml(){
+  if(detailId) return affiliateDetailHtml(detailId);
+  const pending = DB.pendingSignups||[];
+  const filtered = DB.affiliates.filter(a=>a.name.toLowerCase().includes(affQuery.toLowerCase())||a.code.toLowerCase().includes(affQuery.toLowerCase()));
+  return `
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px" class="anim">
+      <div><h1 style="font-size:28px;font-weight:800;margin:0">Sous-affiliés</h1><p class="muted" style="margin:6px 0 0;font-size:14px">${DB.affiliates.length} au total</p></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="padding:11px 16px;display:flex;align-items:center;gap:8px" onclick="syncAllAffiliates()">${icon('refresh',15)} Tout synchroniser</button>
+        <button class="btn-primary" style="border-radius:12px;padding:11px 18px;display:flex;align-items:center;gap:8px" onclick="openAffModal('create')">${icon('plus',16,'#04101f')} Nouveau sous-affilié</button>
+      </div>
+    </div>
+    ${pending.length ? `
+    <div class="card anim" style="padding:20px;margin-bottom:20px;border-color:rgba(234,179,8,.4)">
+      <h2 style="font-size:15px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px">${icon('bell',16,'#eab308')} Demandes d'inscription en attente <span class="mono" style="background:rgba(234,179,8,.15);color:#eab308;padding:2px 8px;border-radius:8px;font-size:12px">${pending.length}</span></h2>
+      <div style="overflow-x:auto;margin-top:12px">
+      <table style="min-width:480px">
+        <thead><tr><th>Nom</th><th>Code demandé</th><th>Parrain (code)</th><th>Demandé le</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>
+          ${pending.map(p=>`<tr>
+            <td style="font-weight:700">${esc(p.name)}</td>
+            <td><span class="mono" style="background:rgba(148,163,184,.08);padding:4px 8px;border-radius:8px;font-size:12px">${esc(p.code)}</span></td>
+            <td class="muted">${esc(p.ref||"—")}</td>
+            <td class="muted">${new Date(p.requestedAt).toLocaleString('fr-FR')}</td>
+            <td style="text-align:right;white-space:nowrap">
+              <button class="btn-primary" style="padding:6px 14px;font-size:12px;border-radius:8px" onclick="approveSignup('${p.id}')">Accepter</button>
+              <button class="btn-ghost" style="padding:6px 14px;font-size:12px" onclick="rejectSignup('${p.id}')">Refuser</button>
+            </td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      </div>
+    </div>` : ""}
+    <div class="anim" style="position:relative;max-width:320px;margin-bottom:16px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%)">${icon('search',16,'#8892b0')}</span>
+      <input style="padding-left:40px" placeholder="Rechercher par nom ou code…" value="${esc(affQuery)}" oninput="affQuery=this.value;render()"/>
+    </div>
+    <div class="card anim" style="overflow:hidden">
+      <div style="overflow-x:auto">
+      <table style="min-width:720px">
+        <thead><tr style="background:rgba(148,163,184,.04)"><th>Nom</th><th>Code</th><th>Commission</th><th>Revenu</th><th>Statut</th><th>Créé le</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>
+          ${filtered.map(a=>{
+            const rev = sumStats(a.dailyStats).revenue;
+            return `<tr class="row" onclick="openDetail('${a.id}')">
+              <td style="font-weight:700">${esc(a.name)}</td>
+              <td><span class="mono" style="background:rgba(148,163,184,.08);padding:4px 8px;border-radius:8px;font-size:12px;cursor:pointer" onclick="event.stopPropagation();copyCode('${a.id}','${esc(a.code)}')">${esc(a.code)} ${copiedId===a.id?'✓':''}</span></td>
+              <td>${eur(a.commissionPerFtd||0)}/FTD</td>
+              <td style="color:#5c9cf8;font-weight:700">${eur(rev)}</td>
+              <td>${statusPill(a.status)}</td>
+              <td class="muted">${new Date(a.createdAt+"T00:00:00").toLocaleDateString('fr-FR')}</td>
+              <td onclick="event.stopPropagation()" style="text-align:right;white-space:nowrap">
+                <button title="Suspendre/réactiver" onclick="toggleStatus('${a.id}')" style="background:none;border:none;cursor:pointer;padding:6px;color:#8892b0">${icon('power',15,'currentColor')}</button>
+                <button title="Modifier" onclick="openAffModal('edit','${a.id}')" style="background:none;border:none;cursor:pointer;padding:6px;color:#8892b0">${icon('pencil',15,'currentColor')}</button>
+                <button title="Supprimer" onclick="deleteAffiliate('${a.id}')" style="background:none;border:none;cursor:pointer;padding:6px;color:#8892b0">${icon('trash',15,'currentColor')}</button>
+              </td>
+            </tr>`;
+          }).join("") || `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--dim)">Aucun sous-affilié ne correspond à cette recherche.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    ${modalState ? affModalHtml() : ""}
+  `;
+}
+function copyCode(id, code){
+  navigator.clipboard?.writeText(code).catch(()=>{});
+  copiedId=id; render();
+  setTimeout(()=>{ copiedId=null; render(); }, 1200);
+}
+function openDetail(id){ detailId=id; render(); }
+function toggleStatus(id){
+  const a=findAffiliate(id); a.status = a.status==="active"?"suspended":"active"; saveData(); render();
+}
+function deleteAffiliate(id){
+  if(!confirm("Supprimer définitivement ce sous-affilié ?")) return;
+  DB.affiliates = DB.affiliates.filter(a=>a.id!==id); saveData(); render();
+}
+let modalLinkRows = [{label:"Signup",url:""}];
+function openAffModal(mode, id){
+  modalState = {mode, id: id||null};
+  const editing = mode==="edit" ? findAffiliate(id) : null;
+  if(editing && editing.baseLinks && editing.baseLinks.length){
+    modalLinkRows = editing.baseLinks.map(r=>({...r}));
+  } else if(editing && (editing.baseLink||editing.trackingLink)){
+    modalLinkRows = [{label:"Principal", url: editing.baseLink||editing.trackingLink}];
+  } else {
+    modalLinkRows = [{label: DB.defaultBaseLinkLabel||"Signup", url:""}];
+  }
+  render();
+}
+function closeAffModal(){ modalState=null; render(); }
+function affModalHtml(){
+  const editing = modalState.mode==="edit" ? findAffiliate(modalState.id) : null;
+  return `<div class="modal-bg" onclick="closeAffModal()">
+    <form onclick="event.stopPropagation()" onsubmit="return saveAffForm(event)" class="card" style="width:100%;max-width:480px;padding:26px;position:relative;background:linear-gradient(180deg, rgba(23,32,55,.95), rgba(10,14,26,.95))">
+      <button type="button" onclick="closeAffModal()" style="position:absolute;right:20px;top:20px;background:none;border:none;cursor:pointer;color:#8892b0">${icon('x',18,'currentColor')}</button>
+      <h2 style="font-size:17px;font-weight:700;margin:0 0 18px">${editing?"Modifier le sous-affilié":"Nouveau sous-affilié"}</h2>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label class="field"><span>Nom</span><input id="fName" value="${editing?esc(editing.name):''}" placeholder="Ex : Jordan M."/></label>
+        <label class="field"><span>Code d'accès</span><div style="display:flex;gap:8px"><input id="fCode" value="${editing?esc(editing.code):''}" placeholder="Ex : X7K2M9" style="flex:1"/><button type="button" class="btn-ghost" style="padding:0 14px;white-space:nowrap" onclick="document.getElementById('fCode').value=genRandomCode()">Générer</button></div></label>
+        <div>
+          <span style="font-size:13px;color:var(--dim);display:block;margin-bottom:8px">Liens de base (Blue Affiliates, sans paramètre)</span>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${modalLinkRows.map((r,i)=>`
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="linkLabel${i}" value="${esc(r.label)}" placeholder="Ex : Signup" style="width:110px;flex-shrink:0" oninput="modalLinkRows[${i}].label=this.value"/>
+                <input id="linkUrl${i}" value="${esc(r.url)}" placeholder="https://www.lolly-bet888.com?faff=958" style="flex:1" oninput="modalLinkRows[${i}].url=this.value"/>
+                <button type="button" class="btn-ghost" style="padding:0 12px;flex-shrink:0;color:#f87171" onclick="removeLinkRow(${i})">${icon('x',15)}</button>
+              </div>`).join("")}
+          </div>
+          <button type="button" class="btn-ghost" style="margin-top:10px;padding:8px 14px;font-size:13px" onclick="addLinkRow()">+ Ajouter un lien</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin:-4px 0 0">Le code d'accès sera ajouté automatiquement à la fin de chaque lien (&sub=code).</p>
+        <label class="field"><span>Commission par FTD (€)</span><input id="fComm" type="number" min="0" step="0.5" value="${editing?editing.commissionPerFtd:30}"/></label>
+        <label class="field"><span>Parrainé par (optionnel)</span><select id="fReferredBy">
+          <option value="">Aucun parrain</option>
+          ${DB.affiliates.filter(o=>!editing||o.id!==editing.id).map(o=>`<option value="${o.id}" ${editing&&editing.referredBy===o.id?'selected':''}>${esc(o.name)} (${esc(o.code)})</option>`).join("")}
+        </select></label>
+      </div>
+      <p id="affFormErr" class="err" style="margin-top:10px"></p>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button type="button" class="btn-ghost" style="flex:1;padding:11px" onclick="closeAffModal()">Annuler</button>
+        <button class="btn-primary" style="flex:1;border-radius:12px;padding:11px">Enregistrer</button>
+      </div>
+    </form>
+  </div>`;
+}
+function addLinkRow(){ modalLinkRows.push({label:"",url:""}); render(); }
+function removeLinkRow(i){ modalLinkRows.splice(i,1); if(modalLinkRows.length===0) modalLinkRows.push({label:"",url:""}); render(); }
+function saveAffForm(e){
+  e.preventDefault();
+  const name=document.getElementById("fName").value.trim();
+  const code=document.getElementById("fCode").value.trim();
+  const links=modalLinkRows.filter(r=>r.url && r.url.trim()).map(r=>({label:(r.label||"").trim()||"Lien",url:r.url.trim()}));
+  const comm=Number(document.getElementById("fComm").value)||0;
+  const referredBy=document.getElementById("fReferredBy").value||null;
+  if(!name||!code||links.length===0){ document.getElementById("affFormErr").textContent="Nom, code et au moins un lien sont obligatoires."; return false; }
+  if(modalState.mode==="edit"){
+    const a=findAffiliate(modalState.id); Object.assign(a,{name,code,baseLinks:links,commissionPerFtd:comm,referredBy});
+  } else {
+    DB.affiliates.unshift({id:uid(),name,code,baseLinks:links,commissionPerFtd:comm,referredBy,status:"active",createdAt:todayStr(),dailyStats:[],messages:[]});
+  }
+  saveData(); modalState=null; render();
+  return false;
+}
+
+/* ---------------- ADMIN: affiliate detail ---------------- */
+let detailPeriod="day"; let statModalOpen=false;
+function affiliateDetailHtml(id){
+  const a = findAffiliate(id);
+  if(!a){ detailId=null; return adminAffiliatesHtml(); }
+  const t = sumStats(a.dailyStats);
+  const commission = t.ftd*(a.commissionPerFtd||0);
+  const chartData = groupStats(a.dailyStats, detailPeriod);
+  const sorted = [...a.dailyStats].sort((x,y)=>y.date.localeCompare(x.date));
+  return `
+    <button onclick="detailId=null;render()" class="anim" style="display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;margin-bottom:16px">${icon('arrowleft',15)} Retour à la liste</button>
+    <div class="anim" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
+      <div><h1 style="font-size:26px;font-weight:800;margin:0">${esc(a.name)}</h1><p class="muted" style="margin:6px 0 0;font-size:13px">Code : ${esc(a.code)} · Commission ${eur(a.commissionPerFtd||0)}/FTD</p>${allTrackingLinks(a).map(l=>`<p class="mono" style="margin:6px 0 0;font-size:12px;color:#5c9cf8;cursor:pointer" onclick="copyMyLink('${esc(l.link).replace(/'/g,"\\'")}')" title="Cliquer pour copier">${esc(l.label)} : ${esc(l.link)} 📋</p>`).join("")}</div>
+      <div style="display:flex;gap:10px">
+        <button id="syncBtn_${a.id}" class="btn-ghost" style="padding:11px 16px;display:flex;align-items:center;gap:8px" onclick="syncAffiliate('${a.id}')">${icon('refresh',15)} Synchroniser</button>
+        <button class="btn-primary" style="border-radius:12px;padding:11px 18px;display:flex;align-items:center;gap:8px" onclick="editStatId=null;statModalOpen=true;render()">${icon('plus',16,'#04101f')} Ajouter une entrée</button>
+      </div>
+    </div>
+    <div class="grid-kpi" style="margin-bottom:20px">
+      ${statCard('userplus','Inscriptions', numf(t.signups),0)}
+      ${statCard('trend','FTD', numf(t.ftd),60)}
+      ${statCard('dollar','Commission', eur(commission),120)}
+    </div>
+    <div class="card anim" style="padding:22px;margin-bottom:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px">
+        <h2 style="font-size:17px;font-weight:700;margin:0">Évolution du revenu</h2>
+        ${periodToggle(detailPeriod,'setDetailPeriod')}
+      </div>
+      ${chartData.length? `<div style="height:260px"><canvas id="detailChart"></canvas></div>` : `<div style="height:200px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px">Aucune donnée pour le moment.</div>`}
+    </div>
+    <div class="card anim" style="padding:22px">
+      <h2 style="font-size:17px;font-weight:700;margin:0 0 16px">Historique des entrées</h2>
+      <div style="overflow-x:auto">
+      <table style="min-width:560px">
+        <thead><tr><th>Date</th><th>Inscriptions</th><th>FTD</th><th>Dépôts</th><th>CA</th><th></th></tr></thead>
+        <tbody>
+          ${sorted.map(s=>`<tr><td>${new Date(s.date+"T00:00:00").toLocaleDateString('fr-FR')}</td><td>${numf(s.signups)}</td><td>${numf(s.ftd)}</td><td>${eur(s.deposits)}</td><td style="color:#5c9cf8;font-weight:700">${eur(s.revenue)}</td><td style="text-align:right;white-space:nowrap"><button onclick="editStat('${a.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:#8892b0;margin-right:6px" title="Modifier">${icon('pencil',14,'currentColor')}</button><button onclick="deleteStat('${a.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:#8892b0" title="Supprimer">${icon('trash',14,'currentColor')}</button></td></tr>`).join("") || `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--dim)">Aucune entrée pour l'instant.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    ${statModalOpen ? statModalHtml(a.id, editStatId) : ""}
+  `;
+}
+function setDetailPeriod(p){ detailPeriod=p; render(); }
+function deleteStat(affId, statId){
+  const a=findAffiliate(affId); a.dailyStats=a.dailyStats.filter(s=>s.id!==statId); saveData(); render();
+}
+let editStatId = null;
+function editStat(affId, statId){
+  editStatId = statId;
+  statModalOpen = true;
+  render();
+}
+function statModalHtml(affId, statId){
+  const a = findAffiliate(affId);
+  const editing = statId ? a.dailyStats.find(s=>s.id===statId) : null;
+  return `<div class="modal-bg" onclick="statModalOpen=false;editStatId=null;render()">
+    <form onclick="event.stopPropagation()" onsubmit="return submitStatForm(event,'${affId}')" class="card" style="width:100%;max-width:480px;padding:26px;position:relative;background:linear-gradient(180deg, rgba(23,32,55,.95), rgba(10,14,26,.95))">
+      <button type="button" onclick="statModalOpen=false;editStatId=null;render()" style="position:absolute;right:20px;top:20px;background:none;border:none;cursor:pointer;color:#8892b0">${icon('x',18,'currentColor')}</button>
+      <h2 style="font-size:17px;font-weight:700;margin:0 0 4px">${editing?"Modifier l'entrée":"Ajouter une entrée"}</h2>
+      <p class="muted" style="font-size:12px;margin:0 0 16px">Pour ${esc(a.name)}</p>
+      <div class="grid-2">
+        <label class="field"><span>Date</span><input id="sDate" type="date" value="${editing?editing.date:todayStr()}"/></label>
+        <label class="field"><span>Inscriptions</span><input id="sSignups" type="number" min="0" value="${editing?editing.signups:0}"/></label>
+        <label class="field"><span>FTD</span><input id="sFtd" type="number" min="0" value="${editing?editing.ftd:0}"/></label>
+        <label class="field"><span>Dépôts (€)</span><input id="sDeposits" type="number" min="0" step="0.01" value="${editing?editing.deposits:0}"/></label>
+        <label class="field"><span>Chiffre d'affaires (€)</span><input id="sRevenue" type="number" min="0" step="0.01" value="${editing?editing.revenue:0}"/></label>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button type="button" class="btn-ghost" style="flex:1;padding:11px" onclick="statModalOpen=false;editStatId=null;render()">Annuler</button>
+        <button class="btn-primary" style="flex:1;border-radius:12px;padding:11px">${editing?"Enregistrer":"Ajouter"}</button>
+      </div>
+    </form>
+  </div>`;
+}
+function submitStatForm(e, affId){
+  e.preventDefault();
+  const a = findAffiliate(affId);
+  const date = document.getElementById("sDate").value || todayStr();
+  const signups = Number(document.getElementById("sSignups").value)||0;
+  const ftd = Number(document.getElementById("sFtd").value)||0;
+  const deposits = Number(document.getElementById("sDeposits").value)||0;
+  const revenue = Number(document.getElementById("sRevenue").value)||0;
+  if(editStatId){
+    const s = a.dailyStats.find(x=>x.id===editStatId);
+    if(s){ s.date=date; s.signups=signups; s.ftd=ftd; s.deposits=deposits; s.revenue=revenue; s.source="manual"; }
+  } else {
+    a.dailyStats.push({ id: uid("stat"), source: "manual", date, clicks: 0, signups, ftd, deposits, revenue });
+  }
+  saveData(); statModalOpen=false; editStatId=null; render();
+  return false;
+}
+
+/* ---------------- ADMIN: settings ---------------- */
+/* ---------------- ADMIN: parrainages ---------------- */
+/* ---------------- ADMIN: messages ---------------- */
+let messagesOpenId = null;
+function openAdminConversation(id){
+  messagesOpenId = id;
+  const a = findAffiliate(id);
+  if(a) markReadByAdmin(a);
+  render();
+}
+function closeAdminConversation(){ messagesOpenId=null; render(); }
+function submitBroadcast(e){
+  e.preventDefault();
+  const input = document.getElementById("broadcastInput");
+  const text = input.value.trim();
+  const msg = document.getElementById("broadcastMsg");
+  if(!text){ msg.className="err"; msg.textContent="Écris un message avant d'envoyer."; return false; }
+  if(!REMOTE_URL || !DB.syncConfig || !DB.syncConfig.apiKey){
+    msg.className="err"; msg.textContent="Synchronisation non configurée (Paramètres > Synchronisation) — impossible d'envoyer une notification push.";
+    return false;
+  }
+  msg.className=""; msg.textContent="Envoi en cours…";
+  fetch(`${REMOTE_URL}/api/broadcast-push`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":DB.syncConfig.apiKey},
+    body: JSON.stringify({ title:"AffiniX", body:text })
+  }).then(r=>r.json()).then(d=>{
+    if(d && d.ok){
+      msg.className="ok"; msg.textContent=`Notification envoyée à ${d.sent} appareil(s) ✔`;
+      input.value="";
+    } else {
+      msg.className="err"; msg.textContent=(d&&d.error)||"Échec de l'envoi.";
+    }
+  }).catch(()=>{ msg.className="err"; msg.textContent="Serveur injoignable, réessaie dans un instant."; });
+  return false;
+}
+function adminMessagesHtml(){
+  if(messagesOpenId){
+    const a = findAffiliate(messagesOpenId);
+    if(!a){ messagesOpenId=null; return adminMessagesHtml(); }
+    return `
+      <div class="anim" style="margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <button class="btn-ghost" style="padding:8px 12px" onclick="closeAdminConversation()">${icon('arrowleft',16)}</button>
+        <div>
+          <h1 style="font-size:22px;font-weight:800;margin:0">${esc(a.name)}</h1>
+          <p class="muted" style="margin:2px 0 0;font-size:13px">Code : ${esc(a.code)}</p>
+        </div>
+      </div>
+      <div class="card anim" style="padding:20px;max-width:640px">
+        ${messageThreadHtml(a, "admin")}
+        <form onsubmit="return submitAdminMessage(event,'${a.id}')" style="display:flex;gap:10px;margin-top:14px">
+          <input id="adminMsgInput" placeholder="Écris ton message…" autocomplete="off" style="flex:1"/>
+          <button class="btn-primary" style="border-radius:12px;padding:0 20px;flex-shrink:0">${icon('send',15,'#04101f')}</button>
+        </form>
+      </div>
+    `;
+  }
+  const list = DB.affiliates.slice().sort((x,y)=>{
+    const lx = (x.messages||[]).slice(-1)[0]; const ly = (y.messages||[]).slice(-1)[0];
+    return (ly?ly.at:"").localeCompare(lx?lx.at:"");
+  });
+  return `
+    <div class="anim" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;margin:0">Messages</h1>
+        <p class="muted" style="margin:6px 0 0;font-size:14px">Conversations directes avec tes sous-affiliés.</p>
+      </div>
+      <button class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="fetchRemoteDB().then(checkFtdNotifications)">${icon('refresh',14)} Actualiser</button>
+    </div>
+    <div class="card anim" style="padding:20px;margin-bottom:20px">
+      <h2 style="font-size:14px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px">${icon('bell',15)} Notification à tous les membres</h2>
+      <p class="muted" style="font-size:13px;margin:0 0 12px">Envoie une vraie notification push à tous les sous-affiliés qui l'ont activée — rien n'apparaît dans la messagerie.</p>
+      <form onsubmit="return submitBroadcast(event)" style="display:flex;flex-direction:column;gap:10px">
+        <textarea id="broadcastInput" rows="3" placeholder="Écris ton annonce ici…" style="width:100%;resize:vertical;font-family:inherit;font-size:14px;padding:10px 12px;border-radius:10px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.18);color:var(--text)"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <p id="broadcastMsg" style="margin:0"></p>
+          <button class="btn-primary" style="border-radius:12px;padding:10px 22px;flex-shrink:0">Envoyer la notification</button>
+        </div>
+      </form>
+    </div>
+    <div class="card anim" style="overflow:hidden">
+      ${list.length ? list.map(a=>{
+        const last = (a.messages||[]).slice(-1)[0];
+        const unread = unreadForAdmin(a);
+        return `<div class="row" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(148,163,184,.08);cursor:pointer" onclick="openAdminConversation('${a.id}')">
+          <div style="min-width:0">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:700">${esc(a.name)}</span>
+              ${unread?`<span class="mono" style="background:#eab308;color:#04101f;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:800">${unread}</span>`:""}
+            </div>
+            <p class="muted" style="margin:4px 0 0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px">${last?esc(last.text):"Aucun message pour le moment."}</p>
+          </div>
+          <span class="muted" style="font-size:12px;flex-shrink:0">${last?fmtMsgTime(last.at):""}</span>
+        </div>`;
+      }).join("") : `<div style="text-align:center;padding:40px;color:var(--dim)">Aucun sous-affilié pour le moment.</div>`}
+    </div>
+  `;
+}
+function submitAdminMessage(e, affiliateId){
+  e.preventDefault();
+  const input = document.getElementById("adminMsgInput");
+  const text = input.value.trim();
+  if(!text) return false;
+  sendMessage(affiliateId, "admin", text);
+  input.value="";
+  render();
+  requestAnimationFrame(()=>{ const t=document.getElementById("msgThreadScroll"); if(t) t.scrollTop=t.scrollHeight; });
+  return false;
+}
+
+function adminReferralsHtml(){
+  const links = DB.affiliates.filter(a=>a.referredBy).map(f=>({
+    filleul:f, sponsor: findAffiliate(f.referredBy), amount: referralEarningsFor(f)
+  })).filter(r=>r.sponsor);
+  const totalPaid = links.reduce((acc,r)=>acc+r.amount,0);
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Parrainages</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">${links.length} parrainage(s) actif(s) · Commission par FTD : ${eur(DB.referralBonusPerFtd||0)}</p>
+    </div>
+    <div class="grid-kpi" style="margin-bottom:20px">
+      ${statCard('gift','Parrainages actifs', links.length, 0)}
+      ${statCard('dollar','Commissions de parrainage', eur(totalPaid), 60)}
+    </div>
+    <div class="card anim" style="padding:20px;margin-bottom:20px">
+      <h2 style="font-size:15px;font-weight:700;margin:0 0 4px">Attacher un parrainage manuellement</h2>
+      <p class="muted" style="font-size:13px;margin:0 0 14px">Cherche par nom ou code, pour n'importe quel sous-affilié — utile pour corriger ou forcer un rattachement.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <label class="field" style="flex:1;min-width:180px"><span>Filleul (celui qui est parrainé)</span>
+          <input id="manualFilleul" list="dl-affiliates" placeholder="Nom ou code…" autocomplete="off"/>
+        </label>
+        <label class="field" style="flex:1;min-width:180px"><span>Parrain (laisser vide pour détacher)</span>
+          <input id="manualParrain" list="dl-affiliates" placeholder="Nom ou code…" autocomplete="off"/>
+        </label>
+        <datalist id="dl-affiliates">${DB.affiliates.map(o=>`<option value="${esc(o.code)}">${esc(o.name)}</option>`).join("")}</datalist>
+        <button class="btn-primary" style="border-radius:12px;padding:11px 18px" onclick="attachReferralManual()">Attacher</button>
+      </div>
+      <p id="manualRefMsg" style="margin:10px 0 0"></p>
+    </div>
+    <div class="card anim" style="overflow:hidden">
+      <div style="overflow-x:auto">
+      <table style="min-width:640px">
+        <thead><tr><th>Parrain</th><th>Filleul</th><th>FTD du filleul</th><th>Commission générée</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>
+          ${links.map(r=>`<tr>
+            <td style="font-weight:700">${esc(r.sponsor.name)}</td>
+            <td>${esc(r.filleul.name)} <span class="mono muted" style="font-size:12px">(${esc(r.filleul.code)})</span></td>
+            <td>${numf(sumStats(r.filleul.dailyStats).ftd)}</td>
+            <td style="color:#5c9cf8;font-weight:700">${eur(r.amount)}</td>
+            <td style="text-align:right"><button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="unlinkReferral('${r.filleul.id}')">Détacher</button></td>
+          </tr>`).join("") || `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--dim)">Aucun parrainage pour le moment. Utilise le formulaire ci-dessus, ou renseigne "Parrainé par" en créant/modifiant un sous-affilié.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+}
+function attachReferralManual(){
+  const msg = document.getElementById("manualRefMsg");
+  const filleulInput = document.getElementById("manualFilleul").value.trim();
+  const parrainInput = document.getElementById("manualParrain").value.trim();
+  if(!filleulInput){ msg.className="err"; msg.textContent="Indique le nom ou le code du filleul."; return; }
+  const filleul = DB.affiliates.find(a=>a.code.toLowerCase()===filleulInput.toLowerCase()||a.name.toLowerCase()===filleulInput.toLowerCase());
+  if(!filleul){ msg.className="err"; msg.textContent="Aucun sous-affilié trouvé avec ce nom/code pour le filleul."; return; }
+  if(!parrainInput){
+    filleul.referredBy = null;
+    saveData(); render();
+    return;
+  }
+  const parrain = DB.affiliates.find(a=>a.code.toLowerCase()===parrainInput.toLowerCase()||a.name.toLowerCase()===parrainInput.toLowerCase());
+  if(!parrain){ msg.className="err"; msg.textContent="Aucun sous-affilié trouvé avec ce nom/code pour le parrain."; return; }
+  if(parrain.id===filleul.id){ msg.className="err"; msg.textContent="Un affilié ne peut pas se parrainer lui-même."; return; }
+  filleul.referredBy = parrain.id;
+  saveData(); render();
+}
+function unlinkReferral(filleulId){
+  if(!confirm("Détacher ce parrainage ? (utile en cas d'auto-parrainage ou de fraude)")) return;
+  const f=findAffiliate(filleulId); if(f){ f.referredBy=null; saveData(); render(); }
+}
+
+let rewardTierRows = null;
+function rewardTierRowsHtml(){
+  if(!rewardTierRows) rewardTierRows = (DB.rewardTiers||[]).map(t=>({...t}));
+  if(!rewardTierRows.length) return `<p class="muted" style="font-size:13px;margin:0">Aucun palier pour le moment, ajoute-en un.</p>`;
+  return rewardTierRows.map((r,i)=>`
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" min="0" value="${r.ftd}" placeholder="FTD requis" style="width:130px;flex-shrink:0" oninput="rewardTierRows[${i}].ftd=Number(this.value)||0"/>
+      <input type="number" min="0" step="0.5" value="${r.amount}" placeholder="Montant (€)" style="flex:1" oninput="rewardTierRows[${i}].amount=Number(this.value)||0"/>
+      <button type="button" class="btn-ghost" style="padding:0 12px;flex-shrink:0;color:#f87171" onclick="removeRewardTierRow(${i})">${icon('x',15)}</button>
+    </div>`).join("");
+}
+function addRewardTierRow(){
+  if(!rewardTierRows) rewardTierRows = (DB.rewardTiers||[]).map(t=>({...t}));
+  rewardTierRows.push({id:uid("tier"), ftd:0, amount:0});
+  render();
+}
+function removeRewardTierRow(i){
+  rewardTierRows.splice(i,1);
+  render();
+}
+function saveRewardTiers(){
+  DB.rewardTiers = (rewardTierRows||[]).filter(r=>r.ftd>0).map(r=>({id:r.id||uid("tier"), ftd:r.ftd, amount:r.amount||0}));
+  rewardTierRows = DB.rewardTiers.map(t=>({...t}));
+  saveData();
+  const msg=document.getElementById("rewardTiersMsg");
+  if(msg){ msg.className="ok"; msg.textContent="Paliers enregistrés ✔"; }
+}
+let communityLinkRows = null;
+let gameLinkRows = null;
+function namedLinkRowsHtml(rows, prefix){
+  if(!rows.length) return `<p class="muted" style="font-size:13px;margin:0">Aucun lien pour le moment, ajoute-en un.</p>`;
+  return rows.map((r,i)=>`
+    <div style="display:flex;gap:8px;align-items:center">
+      <input value="${esc(r.label)}" placeholder="Nom du lien" style="width:150px;flex-shrink:0" oninput="${prefix}LinkRows[${i}].label=this.value"/>
+      <input value="${esc(r.url)}" placeholder="https://..." style="flex:1" oninput="${prefix}LinkRows[${i}].url=this.value"/>
+      <button type="button" class="btn-ghost" style="padding:0 12px;flex-shrink:0;color:#f87171" onclick="remove${prefix[0].toUpperCase()+prefix.slice(1)}LinkRow(${i})">${icon('x',15)}</button>
+    </div>`).join("");
+}
+function communityLinkRowsHtml(){
+  if(!communityLinkRows) communityLinkRows = ((DB.memberLinks||{}).community||[]).map(r=>({...r}));
+  return namedLinkRowsHtml(communityLinkRows, "community");
+}
+function addCommunityLinkRow(){ if(!communityLinkRows) communityLinkRows=[]; communityLinkRows.push({id:uid("lnk"), label:"", url:""}); render(); }
+function removeCommunityLinkRow(i){ communityLinkRows.splice(i,1); render(); }
+function saveCommunityLinks(){
+  DB.memberLinks = DB.memberLinks || defaultMemberLinks();
+  DB.memberLinks.community = (communityLinkRows||[]).filter(r=>r.url && r.url.trim()).map(r=>({id:r.id||uid("lnk"), label:(r.label||"").trim()||"Lien", url:r.url.trim()}));
+  communityLinkRows = DB.memberLinks.community.map(r=>({...r}));
+  saveData();
+  const msg=document.getElementById("communityLinksMsg");
+  if(msg){ msg.className="ok"; msg.textContent="Enregistré ✔"; }
+}
+function gameLinkRowsHtml(){
+  if(!gameLinkRows) gameLinkRows = ((DB.memberLinks||{}).game||[]).map(r=>({...r}));
+  return namedLinkRowsHtml(gameLinkRows, "game");
+}
+function addGameLinkRow(){ if(!gameLinkRows) gameLinkRows=[]; gameLinkRows.push({id:uid("lnk"), label:"", url:""}); render(); }
+function removeGameLinkRow(i){ gameLinkRows.splice(i,1); render(); }
+function saveGameLinks(){
+  DB.memberLinks = DB.memberLinks || defaultMemberLinks();
+  DB.memberLinks.game = (gameLinkRows||[]).filter(r=>r.url && r.url.trim()).map(r=>({id:r.id||uid("lnk"), label:(r.label||"").trim()||"Lien", url:r.url.trim()}));
+  gameLinkRows = DB.memberLinks.game.map(r=>({...r}));
+  saveData();
+  const msg=document.getElementById("gameLinksMsg");
+  if(msg){ msg.className="ok"; msg.textContent="Enregistré ✔"; }
+}
+let liensLinkRows = null;
+function liensLinkRowsHtml(){
+  if(!liensLinkRows) liensLinkRows = ((DB.memberLinks||{}).liens||[]).map(r=>({...r}));
+  return namedLinkRowsHtml(liensLinkRows, "liens");
+}
+function addLiensLinkRow(){ if(!liensLinkRows) liensLinkRows=[]; liensLinkRows.push({id:uid("lnk"), label:"", url:""}); render(); }
+function removeLiensLinkRow(i){ liensLinkRows.splice(i,1); render(); }
+function saveLiensLinks(){
+  DB.memberLinks = DB.memberLinks || defaultMemberLinks();
+  DB.memberLinks.liens = (liensLinkRows||[]).filter(r=>r.url && r.url.trim()).map(r=>({id:r.id||uid("lnk"), label:(r.label||"").trim()||"Lien", url:r.url.trim()}));
+  liensLinkRows = DB.memberLinks.liens.map(r=>({...r}));
+  saveData();
+  const msg=document.getElementById("liensLinksMsg");
+  if(msg){ msg.className="ok"; msg.textContent="Enregistré ✔"; }
+}
+function adminSettingsHtml(){
+  return `
+    <div class="anim" style="margin-bottom:20px;max-width:560px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Paramètres</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Sécurité et données de votre espace administrateur</p>
+    </div>
+    <form onsubmit="return submitMainLink(event)" class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Votre lien de tracking principal</h2>
+      <p class="muted" style="font-size:13px;margin:0">Ce lien t'est réservé, il n'apparaît nulle part dans l'espace membre.</p>
+      <label class="field"><span>Lien</span><input id="fMainLink" value="${esc(DB.mainTrackingLink||'')}" placeholder="https://track.exemple.com/?ref=moi"/></label>
+      <p id="mainLinkMsg"></p>
+      <button class="btn-primary" style="border-radius:12px;padding:11px;width:fit-content;padding-left:24px;padding-right:24px">Enregistrer</button>
+    </form>
+    <form onsubmit="return submitSyncConfig(event)" class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Synchronisation automatique (postbacks)</h2>
+      <p class="muted" style="font-size:13px;margin:0">Renseigne l'URL de ton serveur de réception des postbacks pour importer inscriptions, FTD et revenus automatiquement pour chaque sous-affilié (via son code).</p>
+      <label class="field"><span>URL du serveur</span><input id="fSyncUrl" value="${esc(DB.syncConfig?.apiUrl||'')}" placeholder="https://ton-serveur.onrender.com"/></label>
+      <label class="field"><span>Clé API</span><input id="fSyncKey" type="password" value="${esc(DB.syncConfig?.apiKey||'')}" placeholder="Ta clé ADMIN_API_KEY"/></label>
+      <p id="syncMsg"></p>
+      <button class="btn-primary" style="border-radius:12px;padding:11px;width:fit-content;padding-left:24px;padding-right:24px">Enregistrer</button>
+    </form>
+    <form onsubmit="return submitReferralBonus(event)" class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Programme de parrainage</h2>
+      <p class="muted" style="font-size:13px;margin:0">Montant versé automatiquement à un sous-affilié pour chaque FTD généré par un filleul qu'il a parrainé.</p>
+      <label class="field"><span>Commission par FTD (€)</span><input id="fRefBonus" type="number" min="0" step="0.5" value="${DB.referralBonusPerFtd||0}"/></label>
+      <p id="refBonusMsg"></p>
+      <button class="btn-primary" style="border-radius:12px;padding:11px;width:fit-content;padding-left:24px;padding-right:24px">Enregistrer</button>
+    </form>
+    <div class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Liens "Communauté" (espace membre)</h2>
+      <p class="muted" style="font-size:13px;margin:0">Ajoute un ou plusieurs liens (chacun avec son propre nom). L'onglet "Communauté" n'apparaît chez tes sous-affiliés que s'il y a au moins un lien.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${communityLinkRowsHtml()}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="addCommunityLinkRow()">+ Ajouter un lien</button>
+        <button type="button" class="btn-primary" style="border-radius:12px;padding:8px 18px;font-size:13px" onclick="saveCommunityLinks()">Enregistrer</button>
+      </div>
+      <p id="communityLinksMsg"></p>
+    </div>
+    <div class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Liens "Jeux" (espace membre)</h2>
+      <p class="muted" style="font-size:13px;margin:0">Ajoute un ou plusieurs jeux (chacun avec son propre nom). L'onglet "Jeux" n'apparaît chez tes sous-affiliés que s'il y a au moins un lien.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${gameLinkRowsHtml()}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="addGameLinkRow()">+ Ajouter un jeu</button>
+        <button type="button" class="btn-primary" style="border-radius:12px;padding:8px 18px;font-size:13px" onclick="saveGameLinks()">Enregistrer</button>
+      </div>
+      <p id="gameLinksMsg"></p>
+    </div>
+    <div class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Liens "Liens utiles" (espace membre)</h2>
+      <p class="muted" style="font-size:13px;margin:0">Ajoute un ou plusieurs liens (chacun avec son propre nom). Cet onglet apparaît chez tes sous-affiliés, juste en dessous de "Parrainage", uniquement s'il y a au moins un lien.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">${liensLinkRowsHtml()}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="addLiensLinkRow()">+ Ajouter un lien</button>
+        <button type="button" class="btn-primary" style="border-radius:12px;padding:8px 18px;font-size:13px" onclick="saveLiensLinks()">Enregistrer</button>
+      </div>
+      <p id="liensLinksMsg"></p>
+    </div>
+    <p class="muted" style="font-size:13px;max-width:560px;margin:-6px 0 0">L'onglet "Messages" est une messagerie intégrée : chaque sous-affilié peut t'écrire directement, sans configuration de lien — consulte-la depuis l'onglet "Messages" du menu admin.</p>
+    <div class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Catalogue de récompenses (Rewards)</h2>
+      <p class="muted" style="font-size:13px;margin:0">Paliers affichés à tes sous-affiliés dans l'onglet Rewards, débloqués automatiquement selon leur total de FTD confirmés.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${rewardTierRowsHtml()}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="addRewardTierRow()">+ Ajouter un palier</button>
+        <button type="button" class="btn-primary" style="border-radius:12px;padding:8px 18px;font-size:13px" onclick="saveRewardTiers()">Enregistrer les paliers</button>
+      </div>
+      <p id="rewardTiersMsg"></p>
+    </div>
+    <form onsubmit="return submitSignupConfig(event)" class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Inscription publique via lien de parrainage</h2>
+      <p class="muted" style="font-size:13px;margin:0">Permet à un filleul de créer lui-même son compte sous-affilié en cliquant sur le lien de parrainage d'un autre affilié.</p>
+      <label class="field" style="flex-direction:row;align-items:center;gap:10px"><input id="fAllowSignup" type="checkbox" style="width:auto" ${DB.allowSelfSignup?'checked':''}/><span style="text-transform:none;font-size:14px;font-weight:400;color:var(--text)">Activer l'inscription publique</span></label>
+      <div class="grid-2">
+        <label class="field"><span>Nom du lien</span><input id="fDefaultBaseLinkLabel" value="${esc(DB.defaultBaseLinkLabel||'Signup')}" placeholder="Ex : Signup"/></label>
+        <label class="field"><span>Lien de base pour les inscrits</span><input id="fDefaultBaseLink" value="${esc(DB.defaultBaseLink||'')}" placeholder="https://www.lolly-bet888.com?faff=958"/></label>
+      </div>
+      <label class="field"><span>Commission par défaut (€ / FTD)</span><input id="fDefaultComm" type="number" min="0" step="0.5" value="${DB.defaultCommissionPerFtd||30}"/></label>
+      <p id="signupMsg"></p>
+      <button class="btn-primary" style="border-radius:12px;padding:11px;width:fit-content;padding-left:24px;padding-right:24px">Enregistrer</button>
+    </form>
+    <form onsubmit="return submitPasscodeChange(event)" class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Changer le code d'accès admin</h2>
+      <label class="field"><span>Code actuel</span><input id="pCurrent" type="password"/></label>
+      <label class="field"><span>Nouveau code</span><input id="pNext" type="password"/></label>
+      <p id="passMsg"></p>
+      <button class="btn-primary" style="border-radius:12px;padding:11px;width:fit-content;padding-left:24px;padding-right:24px">Mettre à jour</button>
+    </form>
+    <div class="card anim" style="padding:22px;max-width:560px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:15px;font-weight:700;margin:0">Exporter / Importer les données</h2>
+      <p class="muted" style="font-size:13px;margin:0">Ce site étant statique, tes données restent dans ce navigateur. Exporte-les pour les sauvegarder ou pour les transférer vers un autre appareil.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-ghost" style="padding:10px 16px" onclick="exportData()">Exporter (.json)</button>
+        <label class="btn-ghost" style="padding:10px 16px;cursor:pointer">Importer un fichier<input type="file" accept="application/json" style="display:none" onchange="importData(event)"/></label>
+      </div>
+    </div>
+    <div class="card anim" style="padding:22px;max-width:560px;border-color:rgba(248,113,113,.25);display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:15px;font-weight:700;margin:0;color:#fca5a5">Zone de danger</h2>
+      <p class="muted" style="font-size:13px;margin:0">Réinitialiser efface tous les sous-affiliés et toutes les statistiques de ce navigateur, sans retour possible.</p>
+      <button class="btn-ghost" style="border-color:rgba(248,113,113,.35);color:#fca5a5;padding:10px 16px;width:fit-content" onclick="resetAllData()">Réinitialiser toutes les données</button>
+    </div>
+  `;
+}
+function submitMainLink(e){
+  e.preventDefault();
+  DB.mainTrackingLink = document.getElementById("fMainLink").value.trim();
+  saveData();
+  const msg=document.getElementById("mainLinkMsg");
+  msg.className="ok"; msg.textContent="Lien enregistré ✔";
+  return false;
+}
+function allTrackingLinks(a){
+  const rows = (a.baseLinks && a.baseLinks.length) ? a.baseLinks
+    : (a.baseLink||a.trackingLink) ? [{label:"Principal", url:a.baseLink||a.trackingLink}]
+    : [];
+  return rows.filter(r=>r.url).map(r=>{
+    const sep = r.url.includes("?") ? "&" : "?";
+    return { label: r.label||"Lien", link: r.url + sep + "sub=" + encodeURIComponent(a.code||"") };
+  });
+}
+function genRandomCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sans caractères ambigus (0/O, 1/I)
+  let out = "";
+  for(let i=0;i<6;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+function copyMyLink(link){
+  navigator.clipboard.writeText(link).then(()=>{
+    const btn = event.target;
+    const old = btn.textContent;
+    btn.textContent = "Copié ✔";
+    setTimeout(()=>{ btn.textContent = old; }, 1500);
+  });
+}
+function submitSyncConfig(e){
+  e.preventDefault();
+  DB.syncConfig = {
+    apiUrl: document.getElementById("fSyncUrl").value.trim().replace(/\/$/,""),
+    apiKey: document.getElementById("fSyncKey").value.trim()
+  };
+  saveData();
+  const msg=document.getElementById("syncMsg");
+  msg.className="ok"; msg.textContent="Configuration enregistrée ✔";
+  return false;
+}
+async function syncAffiliate(id){
+  const a = findAffiliate(id);
+  if(!a) return;
+  const cfg = DB.syncConfig;
+  if(!cfg || !cfg.apiUrl){ alert("Configure d'abord l'URL du serveur dans Paramètres > Synchronisation."); return; }
+  const btn = document.getElementById("syncBtn_"+id);
+  if(btn){ btn.disabled = true; btn.textContent = "Synchronisation…"; }
+  try{
+    const res = await fetch(`${cfg.apiUrl}/api/stats/${encodeURIComponent(a.code)}`, {
+      headers: cfg.apiKey ? { "x-api-key": cfg.apiKey } : {}
+    });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    const autoRows = (data.dailyStats||[]).map(r=>({ id: uid("stat"), source:"auto", ...r }));
+    // On retire les anciennes lignes auto pour les remplacer par les nouvelles (les manuelles sont conservées)
+    a.dailyStats = a.dailyStats.filter(s=>s.source!=="auto").concat(autoRows);
+    saveData(); render();
+  }catch(err){
+    alert("Échec de la synchronisation : "+err.message);
+    if(btn){ btn.disabled=false; btn.textContent="Synchroniser"; }
+  }
+}
+async function syncAllAffiliates(){
+  for(const a of DB.affiliates){ await syncAffiliate(a.id); }
+}
+async function silentSyncOne(a){
+  const cfg = DB.syncConfig;
+  if(!cfg || !cfg.apiUrl || !cfg.apiKey) return false;
+  try{
+    const res = await fetch(`${cfg.apiUrl}/api/stats/${encodeURIComponent(a.code)}`, { headers:{ "x-api-key": cfg.apiKey } });
+    if(!res.ok) return false;
+    const data = await res.json();
+    const autoRows = (data.dailyStats||[]).map(r=>({ id: uid("stat"), source:"auto", ...r }));
+    a.dailyStats = a.dailyStats.filter(s=>s.source!=="auto").concat(autoRows);
+    return true;
+  }catch(err){ return false; }
+}
+async function silentSyncAll(){
+  if(!(DB.syncConfig && DB.syncConfig.apiKey)) return;
+  let changed = false;
+  for(const a of DB.affiliates){ if(await silentSyncOne(a)) changed = true; }
+  if(changed){ saveData(); render(); }
+}
+setInterval(()=>{ if(SESSION && SESSION.role==="admin") silentSyncAll(); }, 90000);
+function submitReferralBonus(e){
+  e.preventDefault();
+  DB.referralBonusPerFtd = Number(document.getElementById("fRefBonus").value)||0;
+  saveData();
+  const msg=document.getElementById("refBonusMsg");
+  msg.className="ok"; msg.textContent="Enregistré ✔";
+  return false;
+}
+function submitSignupConfig(e){
+  e.preventDefault();
+  DB.allowSelfSignup = document.getElementById("fAllowSignup").checked;
+  DB.defaultBaseLink = document.getElementById("fDefaultBaseLink").value.trim();
+  DB.defaultBaseLinkLabel = document.getElementById("fDefaultBaseLinkLabel").value.trim() || "Signup";
+  DB.defaultCommissionPerFtd = Number(document.getElementById("fDefaultComm").value)||0;
+  saveData();
+  const msg=document.getElementById("signupMsg");
+  msg.className="ok"; msg.textContent="Enregistré ✔";
+  return false;
+}
+function submitPasscodeChange(e){
+  e.preventDefault();
+  const cur=document.getElementById("pCurrent").value;
+  const next=document.getElementById("pNext").value.trim();
+  const msg=document.getElementById("passMsg");
+  if(cur!==DB.passcode){ msg.className="err"; msg.textContent="Code actuel incorrect."; return false; }
+  if(next.length<4){ msg.className="err"; msg.textContent="Le nouveau code doit contenir au moins 4 caractères."; return false; }
+  DB.passcode=next; saveData();
+  msg.className="ok"; msg.textContent="Code d'accès mis à jour ✔";
+  document.getElementById("pCurrent").value=""; document.getElementById("pNext").value="";
+  return false;
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(DB,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download="affiliatehub-data.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed.affiliates || !parsed.passcode) throw new Error("format invalide");
+      migrateMemberLinks(parsed);
+      if(!parsed.rewardTiers) parsed.rewardTiers=defaultRewardTiers();
+      (parsed.affiliates||[]).forEach(a=>{ if(!a.messages) a.messages=[]; });
+      DB = parsed; rewardTierRows = null; communityLinkRows = null; gameLinkRows = null; messagesOpenId = null; saveData(); render();
+      alert("Données importées avec succès.");
+    }catch(err){ alert("Fichier invalide."); }
+  };
+  reader.readAsText(file);
+}
+function resetAllData(){
+  if(!confirm("Confirmer la suppression définitive de toutes les données ?")) return;
+  DB = {affiliates:[], passcode:DB.passcode, memberLinks:defaultMemberLinks(), rewardTiers:defaultRewardTiers(), pendingSignups:[]};
+  rewardTierRows = null; communityLinkRows = null; gameLinkRows = null; messagesOpenId = null;
+  saveData(); render();
+}
+
+/* ---------------- MEMBER: rewards ---------------- */
+function memberRewardsHtml(a){
+  const totalFtd = sumStats(a.dailyStats).ftd;
+  const tiers = (DB.rewardTiers||[]).slice().sort((x,y)=>x.ftd-y.ftd);
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Rewards</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Consultez les bonus disponibles et débloquez-les en cumulant des premiers dépôts (FTD).</p>
+    </div>
+    <div class="card anim" style="padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <span class="muted" style="font-size:13px">Ton total de FTD confirmés</span>
+      <span style="font-size:22px;font-weight:800">${numf(totalFtd)}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      ${tiers.length ? tiers.map((t,i)=>{
+        const pct = t.ftd>0 ? Math.min(100, (totalFtd/t.ftd)*100) : 0;
+        const done = totalFtd>=t.ftd;
+        return `<div class="card anim" style="padding:20px;animation-delay:${i*40}ms">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="badge">${icon(done?'shield':'gift',18)}</div>
+              <div>
+                <h3 style="margin:0;font-size:15px;font-weight:700">Bonus ${numf(t.ftd)} FTD</h3>
+                <p class="muted" style="margin:2px 0 0;font-size:13px">Atteindre ${numf(t.ftd)} premiers dépôts pour remporter ce reward. Une fois par participant.</p>
+              </div>
+            </div>
+            <span class="pill" style="color:${done?'#6ee7b7':'#5c9cf8'};background:${done?'rgba(52,211,153,.12)':'rgba(52,104,224,.12)'};border:1px solid ${done?'rgba(52,211,153,.35)':'rgba(96,156,248,.3)'};white-space:nowrap">+${eur(t.amount)}</span>
+          </div>
+          <div style="margin-top:14px">
+            <div style="height:8px;border-radius:999px;background:rgba(148,163,184,.12);overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:999px"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--dim)">
+              <span>${done?"Débloqué ✔":"Progression"}</span>
+              <span>${numf(Math.min(totalFtd,t.ftd))} / ${numf(t.ftd)}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join("") : `<div class="card" style="padding:32px;text-align:center;color:var(--dim)">Aucun reward configuré pour le moment.</div>`}
+    </div>
+  `;
+}
+
+/* ---------------- MEMBER: tutoriel (5 étapes premiers FTD) ---------------- */
+function memberTutorialHtml(a){
+  const links = allTrackingLinks(a);
+  const mainLink = links[0] ? links[0].link : "";
+  const games = (DB.memberLinks && DB.memberLinks.game) || [];
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <p style="color:#5c9cf8;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px">Tutoriel</p>
+      <h1 style="font-size:26px;font-weight:800;margin:0">Comment générer tes premiers FTD 🔥</h1>
+      <p class="muted" style="margin:8px 0 0;font-size:14px">Bienvenue ${esc(a.name)} — suis ces 5 étapes pour toucher tes premiers paiements.</p>
+    </div>
+    ${games.length ? `
+    <div class="card anim" style="padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:rgba(96,156,248,.35)">
+      <div>
+        <p style="color:#5c9cf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:0 0 4px">Jeu suggéré</p>
+        <p style="margin:0;font-weight:700">${esc(games[0].label)}</p>
+      </div>
+      <a href="${esc(games[0].url)}" target="_blank" class="btn-ghost" style="padding:8px 16px;text-decoration:none">Ouvrir</a>
+    </div>` : ""}
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card anim" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:800;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+          <h3 style="margin:0;font-size:16px">Copie ton lien personnel</h3>
+        </div>
+        <p class="muted" style="font-size:13px;margin:0 0 12px">Ce lien est unique à toi. Chaque inscription et chaque FTD sont trackés automatiquement.</p>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(148,163,184,.08);padding:10px 14px;border-radius:10px">
+          <span class="mono" style="flex:1;font-size:12px;word-break:break-all">${esc(mainLink)||"Aucun lien configuré — contacte l'administrateur."}</span>
+          ${mainLink?`<button class="btn-ghost" style="padding:6px 12px;flex-shrink:0" onclick="navigator.clipboard?.writeText('${esc(mainLink)}')">${icon('copy',14)}</button>`:""}
+        </div>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">💡 Ne change jamais ce lien — toutes tes performances passées y sont attachées.</p>
+      </div>
+      <div class="card anim" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:800;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>
+          <h3 style="margin:0;font-size:16px">Mets-le dans ta bio</h3>
+        </div>
+        <p class="muted" style="font-size:13px;margin:0 0 12px">TikTok/Instagram → Profil → Modifier le profil → colle ton lien dans le champ "Site web".</p>
+        <div style="background:rgba(52,104,224,.1);border:1px solid rgba(96,156,248,.3);border-radius:10px;padding:12px 14px;font-size:13px;color:#5c9cf8">⚠️ Sans lien en bio, aucune conversion possible — c'est le seul moyen pour les gens de cliquer.</div>
+      </div>
+      <div class="card anim" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:800;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>
+          <h3 style="margin:0;font-size:16px">Crée du contenu</h3>
+        </div>
+        <p class="muted" style="font-size:13px;margin:0 0 12px">Filme-toi, montre l'ambiance, réagis à des moments marquants. Les vidéos qui marchent partagent un point commun :</p>
+        <ul style="margin:0;padding-left:18px;color:var(--dim);font-size:13px;line-height:1.9">
+          <li>3-5 premières secondes <b style="color:var(--text)">accrocheuses</b></li>
+          <li>Format vertical, durée 15-60 secondes</li>
+          <li>Un CTA clair en fin de vidéo : « Lien en bio »</li>
+        </ul>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">Retrouve plus d'astuces détaillées dans l'onglet "Conseils & Stratégie".</p>
+      </div>
+      <div class="card anim" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:800;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span>
+          <h3 style="margin:0;font-size:16px">Poste et laisse le lien 48h minimum</h3>
+        </div>
+        <p class="muted" style="font-size:13px;margin:0 0 6px">⏰ Heures de pointe : 18h-23h</p>
+        <p class="muted" style="font-size:13px;margin:0 0 6px">📌 Une fois posté, ne change pas ton lien en bio pendant 48h minimum.</p>
+        <p class="muted" style="font-size:13px;margin:0">🔁 La régularité bat le coup d'éclat — vise 1 publication par jour.</p>
+      </div>
+      <div class="card anim" style="padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));color:#04101f;font-weight:800;width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</span>
+          <h3 style="margin:0;font-size:16px">Suis tes FTD</h3>
+        </div>
+        <p class="muted" style="font-size:13px;margin:0 0 14px">Dès qu'un joueur clique ton lien et dépose, ça apparaît sur ton tableau de bord (après synchronisation).</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-primary" style="border-radius:10px;padding:10px 18px" onclick="setView('overview')">📊 Voir mon tableau de bord</button>
+        </div>
+      </div>
+    </div>
+    <p class="muted" style="text-align:center;font-size:13px;margin-top:20px">Bloqué ? Contacte l'administrateur depuis l'onglet <a href="#" onclick="event.preventDefault();setView('messages')" style="color:#5c9cf8">Messages</a>.</p>
+  `;
+}
+const ASSISTANT_UNLOCK_FTD = 0;
+const ASSISTANT_TIPS = [
+  {cat:"Diffusion", q:"Comment poster mon lien sur Telegram ?", a:"1. Crée un canal ou groupe Telegram. 2. Ajoute ton lien dans la description du canal. 3. Épingle un message contenant ton lien. 4. Partage-le régulièrement dans tes messages. Le message épinglé + un bot d'accueil pour les nouveaux membres donnent généralement le meilleur taux de conversion : les gens le voient dès leur arrivée, sans avoir à chercher."},
+  {cat:"Diffusion", q:"Comment poster mon lien sur Instagram ?", a:"Mets ton lien en \"lien unique\" dans ta bio (ou via un outil de liens multiples si tu en as plusieurs), et rappelle-le régulièrement en story avec un sticker \"lien\" cliquable. Les stories avec une question ou un sondage juste avant le lien génèrent souvent plus d'engagement qu'un post statique seul."},
+  {cat:"Diffusion", q:"Comment poster mon lien sur WhatsApp ?", a:"Ajoute-le dans la description de ton statut ou d'un groupe/communauté WhatsApp, et partage-le ponctuellement en story de statut. Évite le spam en message privé non sollicité : privilégie les personnes qui te contactent déjà ou qui font partie de ta communauté."},
+  {cat:"Diffusion", q:"Comment poster mon lien sur TikTok/YouTube ?", a:"Mets ton lien dans ta bio et rappelle son emplacement à la fin de tes vidéos plutôt que de l'afficher à l'écran (souvent flouté ou refusé). Une accroche claire dans les 3 premières secondes de la vidéo augmente fortement les chances que les gens aillent voir ta bio."},
+  {cat:"Contenu", q:"Comment créer du contenu qui convertit vraiment ?", a:"Montre des situations concrètes plutôt que des promesses vagues : un avant/après, une réaction authentique, un moment de jeu commenté. Les formats qui marchent le mieux sont courts (15-30s), avec un accroche dans les 2 premières secondes et un call-to-action clair et unique à la fin (un seul lien, pas dix)."},
+  {cat:"Contenu", q:"Quelle fréquence de publication pour progresser vite ?", a:"La régularité compte plus que le volume : 3 à 5 publications par semaine sur la durée battent 20 publications en une semaine puis plus rien. Bloque des créneaux fixes dans ton agenda pour créer, ça évite le \"je le ferai demain\"."},
+  {cat:"Contenu", q:"Comment varier mes formats sans m'épuiser ?", a:"Décline un même contenu en plusieurs formats : une vidéo longue devient 3 extraits courts, une capture d'écran devient un post, un résumé devient une story. Un seul tournage peut nourrir toute une semaine de publications."},
+  {cat:"Trafic", q:"Sur quelles plateformes concentrer mes efforts ?", a:"Commence par UNE plateforme où tu es déjà à l'aise et où ton audience existe, plutôt que de te disperser sur 5 en même temps. Une fois que ton lien y génère des résultats stables, élargis progressivement vers une deuxième."},
+  {cat:"Trafic", q:"Comment donner confiance aux gens avant qu'ils cliquent ?", a:"La transparence rassure : explique clairement que tu es affilié, montre de vrais retours d'expérience plutôt que des chiffres invérifiables, et évite les promesses de gains garantis (en plus d'être malhonnête, ça peut te faire perdre en crédibilité durablement)."},
+  {cat:"Trafic", q:"Dois-je répondre aux commentaires/DM ?", a:"Oui, systématiquement et rapidement si possible. C'est souvent dans les échanges privés que se joue la décision finale de quelqu'un d'hésitant — un lien seul convainc rarement, une vraie conversation si."},
+  {cat:"Conversion", q:"Mon taux de clic est bon mais peu de FTD, pourquoi ?", a:"Vérifie que ton contenu correspond bien à ce que la personne trouve en cliquant (pas de décalage entre la promesse et la réalité), et que ton lien pointe bien vers ta bonne campagne de tracking pour que rien ne se perde en route."},
+  {cat:"Conversion", q:"Comment relancer une audience qui n'a pas encore franchi le pas ?", a:"Varie les angles plutôt que de répéter le même message : une fois montre l'ambiance, une fois un tutoriel simple pour démarrer, une fois une question ouverte à ton audience. La répétition d'un même message identique lasse vite."},
+  {cat:"Optimisation", q:"Comment savoir quel contenu fonctionne le mieux ?", a:"Regarde tes propres statistiques ici (inscriptions, FTD) période par période, et croise avec ce que tu as publié à ces dates. Garde une trace simple (même un carnet) de ce que tu postes et quand, ça devient vite ton meilleur outil de décision."},
+  {cat:"Optimisation", q:"Faut-il plusieurs campagnes/liens différents ?", a:"Oui si tu publies sur plusieurs plateformes ou avec plusieurs formats — crée une campagne par canal (ex: une pour Instagram, une pour YouTube). Ça te permet de voir clairement ce qui ramène vraiment des joueurs, plutôt qu'un seul lien mélangeant tout."},
+  {cat:"Conformité", q:"Y a-t-il des choses à éviter absolument dans mes messages ?", a:"Ne jamais promettre des gains garantis, ne jamais cibler ou t'adresser à des mineurs, et toujours garder un ton responsable autour du jeu (rappelle que ça reste un divertissement, pas une source de revenu garantie). Ça protège à la fois les joueurs et ta propre activité sur la durée."},
+  {cat:"Conformité", q:"Dois-je afficher que je suis affilié ?", a:"C'est une bonne pratique de transparence : une mention simple type \"lien affilié\" ou \"partenaire\" renforce la confiance plutôt que de la fragiliser, et t'évite des malentendus avec ton audience."},
+  {cat:"Régularité", q:"Je stagne depuis plusieurs semaines, que faire ?", a:"Change une seule variable à la fois pour identifier ce qui bloque : le format, l'horaire de publication, la plateforme, ou le message d'accroche. Changer tout en même temps rend impossible de savoir ce qui a fait la différence."},
+  {cat:"Régularité", q:"Comment garder la motivation sur la durée ?", a:"Fixe-toi des petits paliers personnels (ex: +1 inscription cette semaine) plutôt qu'un objectif flou et lointain. Regarde tes progrès ici régulièrement — voir une courbe qui monte, même doucement, entretient la motivation bien plus qu'un chiffre final abstrait."},
+];
+function memberAssistantHtml(a){
+  const totalFtd = sumStats(a.dailyStats).ftd;
+  const unlocked = totalFtd >= ASSISTANT_UNLOCK_FTD;
+  if(!unlocked){
+    const pct = Math.min(100, (totalFtd/ASSISTANT_UNLOCK_FTD)*100);
+    return `
+      <div class="anim" style="margin-bottom:20px">
+        <h1 style="font-size:28px;font-weight:800;margin:0">Conseils & Stratégie</h1>
+        <p class="muted" style="margin:6px 0 0;font-size:14px">Conseils de contenu, de stratégie et d'optimisation pour progresser.</p>
+      </div>
+      <div class="card anim" style="padding:32px;text-align:center">
+        <div class="badge" style="margin:0 auto 16px">${icon('lock',20)}</div>
+        <h3 style="margin:0 0 8px;font-size:16px">Verrouillé</h3>
+        <p class="muted" style="margin:0 0 18px;font-size:13px;max-width:360px;margin-left:auto;margin-right:auto">Génère ${ASSISTANT_UNLOCK_FTD} FTD confirmés pour débloquer l'assistant : contenu, stratégie, optimisation.</p>
+        <div style="max-width:320px;margin:0 auto">
+          <div style="height:8px;border-radius:999px;background:rgba(148,163,184,.12);overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:999px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--dim)">
+            <span>Progression</span><span>${numf(totalFtd)} / ${ASSISTANT_UNLOCK_FTD}</span>
+          </div>
+        </div>
+      </div>`;
+  }
+  const cats = [...new Set(ASSISTANT_TIPS.map(t=>t.cat))];
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Conseils & Stratégie</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Débloqué ✔ — conseils de contenu, de stratégie et d'optimisation.</p>
+    </div>
+    <div class="card anim" style="padding:20px;margin-bottom:20px;border-color:rgba(248,113,113,.35)">
+      <h2 style="font-size:14px;font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px">⚠️ Consignes à toujours respecter</h2>
+      <ul style="margin:0;padding-left:18px;color:var(--dim);font-size:13px;line-height:1.8">
+        <li>Ne jamais promettre des gains d'argent garantis.</li>
+        <li>Ne jamais cibler ou t'adresser à des mineurs — ton audience doit être 18+.</li>
+        <li>Toujours garder un ton responsable autour du jeu (rappelle que c'est un divertissement).</li>
+        <li>Reste transparent sur le fait que tu es affilié/partenaire.</li>
+      </ul>
+    </div>
+    <div style="position:relative;max-width:420px;margin-bottom:20px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--dim)">${icon('search',15)}</span>
+      <input id="assistantSearch" placeholder="Cherche par mot-clé (ex: trafic, contenu, conversion...)" style="padding-left:38px" oninput="filterAssistantTips(this.value)"/>
+    </div>
+    <div id="assistantTipsList" style="display:flex;flex-direction:column;gap:12px">
+      ${cats.map(cat=>`
+        <div class="assistant-cat-group" data-cat="${esc(cat.toLowerCase())}">
+          <p class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px">${esc(cat)}</p>
+          ${ASSISTANT_TIPS.filter(t=>t.cat===cat).map(t=>`
+            <details class="card assistant-tip" data-search="${esc((t.q+' '+t.a+' '+t.cat).toLowerCase())}" style="padding:14px 18px;margin-bottom:8px">
+              <summary style="cursor:pointer;font-weight:700;font-size:14px">${esc(t.q)}</summary>
+              <p style="margin:10px 0 0;font-size:13px;color:var(--dim);line-height:1.6">${esc(t.a)}</p>
+            </details>`).join("")}
+        </div>`).join("")}
+      <p id="assistantNoResult" class="muted" style="display:none;text-align:center;padding:24px;font-size:13px">Aucun résultat, essaie avec d'autres mots-clés.</p>
+    </div>
+  `;
+}
+function filterAssistantTips(query){
+  const q = query.trim().toLowerCase();
+  const tips = document.querySelectorAll(".assistant-tip");
+  let anyVisible = false;
+  tips.forEach(el=>{
+    const match = !q || el.getAttribute("data-search").includes(q);
+    el.style.display = match ? "" : "none";
+    if(match) anyVisible = true;
+  });
+  document.querySelectorAll(".assistant-cat-group").forEach(group=>{
+    const visibleInGroup = [...group.querySelectorAll(".assistant-tip")].some(el=>el.style.display!=="none");
+    group.style.display = visibleInGroup ? "" : "none";
+  });
+  const noRes = document.getElementById("assistantNoResult");
+  if(noRes) noRes.style.display = anyVisible ? "none" : "block";
+}
+function memberMessagesHtml(a){
+  markReadByMember(a);
+  return `
+    <div class="anim" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;margin:0">Messages</h1>
+        <p class="muted" style="margin:6px 0 0;font-size:14px">Échange directement avec l'administrateur.</p>
+      </div>
+      <button class="btn-ghost" style="padding:8px 14px;font-size:13px" onclick="fetchRemoteDB().then(checkFtdNotifications)">${icon('refresh',14)} Actualiser</button>
+    </div>
+    <div class="card anim" style="padding:20px;max-width:640px">
+      ${messageThreadHtml(a, "member")}
+      <form onsubmit="return submitMemberMessage(event,'${a.id}')" style="display:flex;gap:10px;margin-top:14px">
+        <input id="memberMsgInput" placeholder="Écris ton message…" autocomplete="off" style="flex:1"/>
+        <button class="btn-primary" style="border-radius:12px;padding:0 20px;flex-shrink:0">${icon('send',15,'#04101f')}</button>
+      </form>
+    </div>
+  `;
+}
+function submitMemberMessage(e, affiliateId){
+  e.preventDefault();
+  const input = document.getElementById("memberMsgInput");
+  const text = input.value.trim();
+  if(!text) return false;
+  sendMessage(affiliateId, "member", text);
+  input.value="";
+  render();
+  requestAnimationFrame(()=>{ const t=document.getElementById("msgThreadScroll"); if(t) t.scrollTop=t.scrollHeight; });
+  return false;
+}
+
+/* ---------------- MEMBER: communauté & jeux (liens configurés par l'admin) ---------------- */
+function linkCardsHtml(links, emptyMsg, accent){
+  if(!links || !links.length) return `<div class="card" style="padding:32px;text-align:center;color:var(--dim)">${esc(emptyMsg)}</div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px">
+    ${links.map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener" class="card anim" style="padding:18px 20px;display:flex;align-items:center;justify-content:space-between;text-decoration:none;gap:12px;${accent?`border-color:rgba(234,179,8,.3)`:''}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="badge" style="${accent?'background:linear-gradient(135deg, rgba(234,179,8,.25), rgba(234,179,8,.1));border-color:rgba(234,179,8,.35)':''}">${icon(accent?'game':'users',18,accent?'#fde68a':'#5c9cf8')}</div>
+        <span style="font-weight:700;font-size:15px;color:${accent?'#fde68a':'var(--text)'}">${esc(l.label)}</span>
+      </div>
+      ${icon('send',15, accent?'#fde68a':'#5c9cf8')}
+    </a>`).join("")}
+  </div>`;
+}
+function memberCommunityHtml(){
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Communauté</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Rejoins les espaces communautaires.</p>
+    </div>
+    ${linkCardsHtml((DB.memberLinks||{}).community, "Aucun lien de communauté pour le moment.", false)}
+  `;
+}
+function memberGamesHtml(){
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Jeux</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Lance un jeu depuis ici.</p>
+    </div>
+    ${linkCardsHtml((DB.memberLinks||{}).game, "Aucun jeu configuré pour le moment.", true)}
+  `;
+}
+function memberLiensHtml(){
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Liens utiles</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Retrouve ici tes liens utiles.</p>
+    </div>
+    ${linkCardsHtml((DB.memberLinks||{}).liens, "Aucun lien pour le moment.", false)}
+  `;
+}
+
+/* ---------------- MEMBER dashboard ---------------- */
+let memberPeriod="day";
+function memberDashboardHtml(a){
+  const t = sumStats(a.dailyStats);
+  const commission = t.ftd*(a.commissionPerFtd||0);
+  const conversion = t.signups ? (t.ftd/t.signups)*100 : 0;
+  const chartData = groupStats(a.dailyStats, memberPeriod);
+  const sorted = [...a.dailyStats].sort((x,y)=>y.date.localeCompare(x.date));
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+      ${notifButtonHtml(NOTIF_MEMBER_KEY)}
+      <button onclick="syncAffiliate('${a.id}')" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--dim);font-size:12px;cursor:pointer">${icon('refresh',13)} Actualiser</button>
+    </div>
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:26px;font-weight:800;margin:0">Bonjour, ${esc(a.name.split(' ')[0])} 👋</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Aperçu de votre activité</p>
+    </div>
+    <div class="card anim" style="padding:20px 22px;margin-bottom:20px">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 12px;font-weight:600">Tes liens d'affiliation</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${allTrackingLinks(a).length? allTrackingLinks(a).map(l=>`
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(255,255,255,.03);border-radius:10px">
+            <div style="min-width:0">
+              <p style="font-size:11px;color:var(--dim);margin:0 0 3px;font-weight:600">${esc(l.label)}</p>
+              <p class="mono" style="font-size:13px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:440px">${esc(l.link)}</p>
+            </div>
+            <button class="btn-primary" style="border-radius:10px;padding:8px 16px;flex-shrink:0" onclick="copyMyLink('${esc(l.link).replace(/'/g,"\\'")}')">Copier</button>
+          </div>`).join("") : `<p class="muted" style="font-size:13px;margin:0">Pas encore configuré — contacte ton admin.</p>`}
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:16px">
+      ${statCard('userplus','Inscriptions', numf(t.signups),0)}
+      ${statCard('trend','FTD', numf(t.ftd),60)}
+    </div>
+    <div class="grid-2" style="margin-bottom:16px">
+      ${statCard('percent','Conversion', pctf(conversion),120)}
+      ${statCard('wallet','Dépôts', eur(t.deposits),180)}
+    </div>
+    <div class="grid-2" style="margin-bottom:20px">
+      ${statCard('dollar','Mes revenus', eur(commission),240)}
+      ${statCard('dollar',"Chiffre d'affaires", eur(t.revenue),300)}
+    </div>
+    <div class="card anim" style="padding:22px;margin-bottom:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px">
+        <div><h2 style="font-size:17px;font-weight:700;margin:0">Revenu généré</h2></div>
+        ${periodToggle(memberPeriod,'setMemberPeriod')}
+      </div>
+      ${chartData.length? `<div style="height:260px"><canvas id="memberChart"></canvas></div>` : `<div style="height:200px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px">Vos statistiques apparaîtront ici dès la première entrée.</div>`}
+    </div>
+    <div class="card anim" style="padding:22px">
+      <h2 style="font-size:17px;font-weight:700;margin:0 0 16px">Historique des performances</h2>
+      <div style="overflow-x:auto">
+      <table style="min-width:560px">
+        <thead><tr><th>Date</th><th>Inscriptions</th><th>FTD</th><th>Dépôts</th><th>CA</th><th>Revenus</th></tr></thead>
+        <tbody>
+          ${sorted.map(s=>`<tr><td>${new Date(s.date+"T00:00:00").toLocaleDateString('fr-FR')}</td><td>${numf(s.signups)}</td><td>${numf(s.ftd)}</td><td>${eur(s.deposits)}</td><td>${eur(s.revenue)}</td><td style="color:#5c9cf8;font-weight:700">${eur(s.ftd*(a.commissionPerFtd||0))}</td></tr>`).join("") || `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--dim)">Aucune donnée pour le moment.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+}
+function setMemberPeriod(p){ memberPeriod=p; render(); }
+
+/* ---------------- MEMBER: parrainage ---------------- */
+function memberReferralHtml(a){
+  const myFilleuls = filleulsOf(a.id);
+  const totalRef = totalReferralEarnings(a.id);
+  const history = referralHistoryFor(a.id);
+  const regLink = `${location.origin}${location.pathname}?ref=${encodeURIComponent(a.code)}`;
+  const shareMsg = `Salut ! Rejoins-moi en tant que sous-affilié via ce lien : ${regLink}`;
+  const encMsg = encodeURIComponent(shareMsg);
+  return `
+    <div class="anim" style="margin-bottom:20px">
+      <h1 style="font-size:28px;font-weight:800;margin:0">Parrainage</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:14px">Parraine d'autres personnes et touche ${eur(DB.referralBonusPerFtd||0)} par FTD qu'elles génèrent.</p>
+    </div>
+    <div class="card anim" style="padding:22px;margin-bottom:20px">
+      <h2 style="font-size:15px;font-weight:700;margin:0 0 10px">Ton lien de parrainage</h2>
+      <p class="muted" style="font-size:13px;margin:0 0 12px">Partage ce lien : la personne pourra créer elle-même son compte sous-affilié, automatiquement rattaché à toi.</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <span class="mono" style="background:rgba(148,163,184,.08);padding:8px 14px;border-radius:10px;font-size:13px;word-break:break-all">${esc(regLink)}</span>
+        <button class="btn-ghost" style="padding:8px 14px;flex-shrink:0" onclick="navigator.clipboard?.writeText('${esc(regLink)}')">${icon('copy',14)} Copier le lien</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="https://wa.me/?text=${encMsg}" target="_blank" class="btn-ghost" style="padding:8px 14px;text-decoration:none">${icon('send',14)} WhatsApp</a>
+        <a href="https://t.me/share/url?url=${encodeURIComponent(regLink)}&text=${encodeURIComponent('Rejoins-moi en tant que sous-affilié 🎯')}" target="_blank" class="btn-ghost" style="padding:8px 14px;text-decoration:none">${icon('send',14)} Telegram</a>
+        <a href="https://twitter.com/intent/tweet?text=${encMsg}" target="_blank" class="btn-ghost" style="padding:8px 14px;text-decoration:none">${icon('send',14)} X</a>
+        <button class="btn-ghost" style="padding:8px 14px" onclick="navigator.clipboard?.writeText('${esc(shareMsg)}')">${icon('copy',14)} Copier le message</button>
+      </div>
+    </div>
+    <div class="grid-kpi" style="margin-bottom:20px">
+      ${statCard('users','Filleuls', myFilleuls.length, 0)}
+      ${statCard('gift','Revenus de parrainage', eur(totalRef), 60)}
+    </div>
+    <div class="card anim" style="overflow:hidden;margin-bottom:20px">
+      <div style="padding:18px 20px 0"><h2 style="font-size:15px;font-weight:700;margin:0">Mes filleuls</h2></div>
+      <div style="overflow-x:auto">
+      <table style="min-width:560px">
+        <thead><tr><th>Nom</th><th>Depuis le</th><th>Statut</th><th>FTD générés</th><th>Commission pour toi</th></tr></thead>
+        <tbody>
+          ${myFilleuls.map(f=>`<tr>
+            <td style="font-weight:700">${esc(f.name)}</td>
+            <td class="muted">${new Date(f.createdAt+"T00:00:00").toLocaleDateString('fr-FR')}</td>
+            <td>${statusPill(f.status)}</td>
+            <td>${numf(sumStats(f.dailyStats).ftd)}</td>
+            <td style="color:#5c9cf8;font-weight:700">${eur(referralEarningsFor(f))}</td>
+          </tr>`).join("") || `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--dim)">Tu n'as encore parrainé personne.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div class="card anim" style="overflow:hidden">
+      <div style="padding:18px 20px 0"><h2 style="font-size:15px;font-weight:700;margin:0">Historique des commissions de parrainage</h2></div>
+      <div style="overflow-x:auto">
+      <table style="min-width:480px">
+        <thead><tr><th>Date</th><th>Filleul</th><th>FTD</th><th>Montant</th></tr></thead>
+        <tbody>
+          ${history.map(h=>`<tr>
+            <td>${new Date(h.date+"T00:00:00").toLocaleDateString('fr-FR')}</td>
+            <td>${esc(h.filleulName)}</td>
+            <td>${numf(h.ftd)}</td>
+            <td style="color:#5c9cf8;font-weight:700">${eur(h.amount)}</td>
+          </tr>`).join("") || `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--dim)">Aucune commission de parrainage pour le moment.</td></tr>`}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------------- main render / router ---------------- */
+function render(){
+  if(!SESSION){ renderLogin(); return; }
+  const app = document.getElementById("app");
+
+  if(SESSION.role==="admin"){
+    const nav = [
+      {key:"overview", label:"Vue d'ensemble", icon:"layout"},
+      {key:"affiliates", label:"Sous-affiliés", icon:"users", badge:(DB.pendingSignups||[]).length||undefined},
+      {key:"messages", label:"Messages", icon:"message", badge: totalUnreadForAdmin()||undefined},
+      {key:"referrals", label:"Parrainages", icon:"gift"},
+      {key:"assistant", label:"Conseils & Stratégie", icon:"lightbulb"},
+      {key:"settings", label:"Paramètres", icon:"settings"},
+    ];
+    let content = "";
+    if(VIEW==="overview") content = adminOverviewHtml();
+    else if(VIEW==="affiliates") content = adminAffiliatesHtml();
+    else if(VIEW==="messages") content = adminMessagesHtml();
+    else if(VIEW==="referrals") content = adminReferralsHtml();
+    else if(VIEW==="assistant") content = memberAssistantHtml({dailyStats:[{date:todayStr(),signups:0,ftd:ASSISTANT_UNLOCK_FTD,deposits:0,revenue:0}]});
+    else content = adminSettingsHtml();
+    app.innerHTML = shell(nav, "Administrateur", "Administrateur", content);
+    if(VIEW==="overview"){ const d=groupStats(DB.affiliates.flatMap(a=>a.dailyStats), adminPeriod); if(d.length) renderAreaChart("adminChart", d); }
+    if(VIEW==="affiliates" && detailId){ const a=findAffiliate(detailId); if(a){ const d=groupStats(a.dailyStats, detailPeriod); if(d.length) renderAreaChart("detailChart", d); } }
+    if(VIEW==="messages" && messagesOpenId){ const t=document.getElementById("msgThreadScroll"); if(t) t.scrollTop=t.scrollHeight; }
+    return;
+  }
+
+  const a = findAffiliate(SESSION.id);
+  if(!a){
+    app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+      <div class="card" style="padding:32px;max-width:360px;text-align:center">
+        <p style="margin:0 0 16px">Votre compte n'est plus disponible.</p>
+        <button class="btn-primary" style="border-radius:12px;padding:10px 20px" onclick="logout()">Retour à la connexion</button>
+      </div></div>`;
+    return;
+  }
+  const ml = DB.memberLinks||{};
+  const nav = [
+    {key:"overview", label:"Mon tableau de bord", icon:"layout"},
+    {key:"tutorial", label:"Tutoriel", icon:"book"},
+    {key:"messages", label:"Messages", icon:"message", badge: unreadForMember(a)||undefined},
+  ];
+  nav.push({key:"rewards", label:"Rewards", icon:"gift"});
+  nav.push({key:"referral", label:"Parrainage", icon:"gift"});
+  nav.push({key:"assistant", label:"Conseils & Stratégie", icon:"lightbulb"});
+  if((ml.game||[]).length) nav.push({key:"games", label:"Jeux", icon:"game"});
+  if((ml.community||[]).length) nav.push({key:"community", label:"Communauté", icon:"users"});
+  if((ml.liens||[]).length) nav.push({key:"liens", label:"Liens utiles", icon:"link"});
+  let memberContent;
+  if(VIEW==="referral") memberContent = memberReferralHtml(a);
+  else if(VIEW==="tutorial") memberContent = memberTutorialHtml(a);
+  else if(VIEW==="assistant") memberContent = memberAssistantHtml(a);
+  else if(VIEW==="rewards") memberContent = memberRewardsHtml(a);
+  else if(VIEW==="messages") memberContent = memberMessagesHtml(a);
+  else if(VIEW==="community") memberContent = memberCommunityHtml();
+  else if(VIEW==="games") memberContent = memberGamesHtml();
+  else if(VIEW==="liens") memberContent = memberLiensHtml();
+  else memberContent = memberDashboardHtml(a);
+  app.innerHTML = shell(nav, a.name, "Partenaire", memberContent);
+  if(VIEW==="messages"){ const t=document.getElementById("msgThreadScroll"); if(t) t.scrollTop=t.scrollHeight; }
+  if(VIEW!=="referral" && VIEW!=="tutorial" && VIEW!=="assistant" && VIEW!=="rewards" && VIEW!=="messages" && VIEW!=="community" && VIEW!=="games" && VIEW!=="liens"){
+    const d = groupStats(a.dailyStats, memberPeriod);
+    if(d.length) renderAreaChart("memberChart", d);
+  }
+}
+
+render();
+fetchRemoteDB().then(checkFtdNotifications);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+// --- Bouton d'installation PWA (discret, avec croix de fermeture) ---
+(function(){
+  let deferredPrompt = null;
+  const DISMISS_KEY = 'affinix_install_dismissed';
+
+  function alreadyDismissed(){
+    // Fermé pour l'onglet/session en cours seulement : reviendra à la prochaine ouverture du site.
+    if(sessionStorage.getItem('affinix_install_snoozed') === '1') return true;
+    // Sauf si l'app a déjà été installée : là, on ne redemande plus jamais.
+    return localStorage.getItem(DISMISS_KEY) === 'forever';
+  }
+  function snoozeDismiss(){
+    sessionStorage.setItem('affinix_install_snoozed', '1');
+  }
+  function dismissForever(){
+    localStorage.setItem(DISMISS_KEY, 'forever');
+  }
+
+  function isStandalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function showInstallBadge(){
+    if(alreadyDismissed() || isStandalone()) return;
+    if(document.getElementById('installBadge')) return;
+
+    const el = document.createElement('div');
+    el.id = 'installBadge';
+    el.style.cssText = `
+      position:fixed; right:18px; bottom:18px; left:18px; z-index:9999;
+      display:flex; align-items:center; gap:10px; justify-content:flex-end;
+      font-family:inherit; color:#e7ebf7; font-size:13px;
+      animation:installBadgeIn .35s ease; pointer-events:none;
+    `;
+    el.innerHTML = `
+      <style>
+        @keyframes installBadgeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+        #installBadge button{cursor:pointer;}
+        #installBadgeInner{
+          pointer-events:auto;
+          display:flex; align-items:center; gap:10px;
+          background:linear-gradient(180deg, rgba(23,32,55,0.92), rgba(12,17,30,0.92));
+          border:1px solid rgba(96,156,248,0.25);
+          backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+          border-radius:16px; padding:10px 12px 10px 14px;
+          box-shadow:0 10px 30px -8px rgba(0,0,0,.5);
+          max-width:100%; box-sizing:border-box;
+        }
+        #installBadgeInstall{
+          display:flex; align-items:center; gap:8px; background:linear-gradient(135deg,#3468e0,#ffb84a);
+          color:#04101f; font-weight:700; border:none; border-radius:12px; padding:9px 14px;
+          font-size:13px; font-family:inherit; box-shadow:0 8px 20px -8px rgba(52,104,224,.65);
+          transition:.2s ease; white-space:nowrap; flex:1; justify-content:center;
+        }
+        #installBadgeInstall:hover{ transform:translateY(-1px); filter:brightness(1.06); }
+        #installBadgeClose{
+          background:transparent; border:none; color:#8892b0; width:26px; height:26px;
+          border-radius:50%; display:flex; align-items:center; justify-content:center;
+          flex-shrink:0; transition:.2s ease; padding:0;
+        }
+        #installBadgeClose:hover{ background:rgba(148,163,184,.15); color:#e7ebf7; }
+        @media (min-width:640px){
+          #installBadge{ justify-content:flex-end; left:auto; }
+          #installBadgeInner{ max-width:300px; }
+          #installBadgeInstall{ flex:none; }
+        }
+      </style>
+      <div id="installBadgeInner">
+        <button id="installBadgeInstall" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          Installer l'app
+        </button>
+        <button id="installBadgeClose" type="button" aria-label="Fermer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    document.getElementById('installBadgeClose').addEventListener('click', ()=>{
+      snoozeDismiss();
+      el.remove();
+    });
+
+    document.getElementById('installBadgeInstall').addEventListener('click', async ()=>{
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if(outcome === 'accepted'){ dismissForever(); }
+      deferredPrompt = null;
+      el.remove();
+    });
+  }
+
+  function isIOS(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isSafariIOS(){
+    // Sur iOS, tous les navigateurs utilisent WebKit ; Chrome/Firefox iOS ont "crios"/"fxios" dans le UA
+    return isIOS() && !/crios|fxios|edgios|opios/i.test(navigator.userAgent);
+  }
+
+  function showIOSBadge(){
+    if(alreadyDismissed() || isStandalone()) return;
+    if(document.getElementById('installBadge')) return;
+
+    const el = document.createElement('div');
+    el.id = 'installBadge';
+    el.style.cssText = `
+      position:fixed; right:18px; bottom:18px; left:18px; z-index:9999;
+      display:flex; align-items:flex-start; gap:10px;
+      background:linear-gradient(180deg, rgba(23,32,55,0.92), rgba(12,17,30,0.92));
+      border:1px solid rgba(96,156,248,0.25);
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      border-radius:16px; padding:12px 12px 12px 14px;
+      box-shadow:0 10px 30px -8px rgba(0,0,0,.5);
+      font-family:inherit; color:#e7ebf7; font-size:13px; line-height:1.5;
+      animation:installBadgeIn .35s ease;
+      max-width:380px; margin:0 auto;
+    `;
+    el.innerHTML = `
+      <style>
+        @keyframes installBadgeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+        #installBadgeClose{
+          background:transparent; border:none; color:#8892b0; width:22px; height:22px;
+          border-radius:50%; display:flex; align-items:center; justify-content:center;
+          flex-shrink:0; transition:.2s ease; padding:0; cursor:pointer; margin-left:auto;
+        }
+        #installBadgeClose:hover{ background:rgba(148,163,184,.15); color:#e7ebf7; }
+        #installBadge .ios-icon{
+          flex-shrink:0; width:32px; height:32px; border-radius:9px;
+          background:linear-gradient(135deg,#3468e0,#ffb84a); display:flex;
+          align-items:center; justify-content:center; color:#04101f;
+        }
+      </style>
+      <div class="ios-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;margin-bottom:2px;">Installer l'app</div>
+        <div style="color:#8892b0;">Appuyez sur <strong style="color:#e7ebf7;">Partager</strong> puis <strong style="color:#e7ebf7;">Sur l'écran d'accueil</strong>.</div>
+      </div>
+      <button id="installBadgeClose" type="button" aria-label="Fermer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+    `;
+    document.body.appendChild(el);
+
+    document.getElementById('installBadgeClose').addEventListener('click', ()=>{
+      snoozeDismiss();
+      el.remove();
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallBadge();
+  });
+
+  window.addEventListener('appinstalled', ()=>{
+    dismissForever();
+    const el = document.getElementById('installBadge');
+    if(el) el.remove();
+  });
+
+  // iOS (Safari, Chrome iOS, Firefox iOS...) ne déclenche jamais beforeinstallprompt :
+  // on affiche un message avec les instructions manuelles.
+  if(isIOS()){
+    window.addEventListener('load', ()=>{ setTimeout(showIOSBadge, 800); });
+  }
+})();
+</script>
+</body>
+</html>
