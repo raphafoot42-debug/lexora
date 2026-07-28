@@ -1,8 +1,0 @@
-[build]
-  functions = "fonction"
-  publish = "."
-
-[[redirects]]
-  from = "/*"
-  to   = "/index.html"
-  status = 404
