@@ -1,18 +1,26 @@
--- À coller dans Supabase → SQL Editor → New query → Run
-
 create table if not exists app_db (
-  id int primary key default 1,
+  id bigint primary key,
   data jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-create table if not exists push_subscriptions (
-  affiliate_id text primary key,
-  subscription jsonb not null,
-  updated_at timestamptz not null default now()
+create table if not exists postback_log (
+  id bigint generated always as identity primary key,
+  code text not null,
+  type text not null,
+  amount numeric(10,2) not null default 0,
+  raw jsonb not null default '{}'::jsonb,
+  received_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- RLS activée mais aucune policy publique : seule la clé service_role
--- (utilisée uniquement côté serveur, jamais dans le front) peut lire/écrire.
-alter table app_db enable row level security;
-alter table push_subscriptions enable row level security;
+create table if not exists postback_daily_stats (
+  code text not null,
+  date date not null,
+  clicks integer not null default 0,
+  signups integer not null default 0,
+  ftd integer not null default 0,
+  deposits numeric(10,2) not null default 0,
+  revenue numeric(10,2) not null default 0,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (code, date)
+);
