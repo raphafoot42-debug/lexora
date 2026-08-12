@@ -27,7 +27,6 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // BlueAffiliates appelle en GET (query string) le plus souvent, parfois en POST.
   const params = { ...(req.query || {}), ...(req.body || {}) };
 
   const key = pick(params, ['key', 'apikey', 'api_key']);
@@ -40,15 +39,12 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'type invalide (register, ftd, deposit, cpa, ngr)' });
   }
 
-  // Le code affilié Lexora est transmis par BlueAffiliates via son macro de tracking
-  // (souvent {subid} / {click_id} / {aff_id} selon la plateforme).
   const code = pick(params, ['code', 'subid', 'sub_id', 'affid', 'aff_id', 'clickid', 'click_id']);
   if (!code) return res.status(400).json({ error: 'code (identifiant affilié) manquant' });
 
   const amount = Number(pick(params, ['amount', 'sum', 'value', 'ngr_amount', 'cpa_amount'])) || 0;
   const today = new Date().toISOString().slice(0, 10);
 
-  // Log brut, utile pour debug/litiges avec le casino
   await supabase.from('postback_log').insert({
     code: String(code),
     type,
