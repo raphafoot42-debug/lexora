@@ -11,7 +11,5 @@ export default async function handler(req, res) {
   if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
     return res.status(401).json({ error: "Clé API invalide ou manquante." });
   }
-  // Notifications push pas encore branchées : on répond ok sans en envoyer,
-  // pour ne pas faire planter le bouton "Envoyer la notification".
   res.status(200).json({ ok: true, sent: 0 });
 }
