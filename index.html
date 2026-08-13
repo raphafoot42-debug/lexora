@@ -176,9 +176,42 @@ function saveData(){
 
 let pushRetryTimer = null;
 
+// Bandeau visible en haut de l'écran : apparaît UNIQUEMENT si la
+// synchronisation échoue réellement (toutes les tentatives épuisées ou
+// en cours de retentative), et disparaît automatiquement dès que la
+// synchronisation réussit. Ne dépend pas de render() pour ne jamais
+// perturber un formulaire ouvert.
+function updateSyncStatusBadge(){
+  let el = document.getElementById('syncStatusBadge');
+  const failing = DB.pushFailed || DB.pullFailed;
+  if(failing){
+    const msg = DB.pullFailed
+      ? "⚠️ Impossible de récupérer les données du serveur partagé — ce que tu vois peut être incomplet ou obsolète. Nouvelle tentative en cours…"
+      : "⚠️ Synchronisation échouée — tes dernières modifications ne sont pas encore enregistrées sur le serveur partagé. Nouvelle tentative en cours…";
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'syncStatusBadge';
+      el.style.cssText = `
+        position:fixed; top:0; left:0; right:0; z-index:10000;
+        background:linear-gradient(135deg,#f87171,#ef4444); color:#1a0505;
+        font-weight:700; font-size:13px; padding:9px 14px;
+        text-align:center; font-family:inherit;
+        box-shadow:0 4px 16px -4px rgba(239,68,68,.6);
+        display:flex; align-items:center; justify-content:center; gap:8px;
+      `;
+      document.body.prepend(el);
+    }
+    el.innerHTML = msg;
+    document.body.style.paddingTop = el.offsetHeight + "px";
+  } else {
+    if(el){ el.remove(); document.body.style.paddingTop = "0"; }
+  }
+}
+
 // Envoie la base complète au serveur partagé (sans jamais y inclure la
 // clé API en clair, pour ne pas l'exposer publiquement via /api/db).
-// Retente automatiquement en cas d'échec au lieu d'abandonner en silence.
+// Retente automatiquement en cas d'échec au lieu d'abandonner en silence,
+// et affiche un bandeau clair si ça échoue pour de bon.
 function pushRemoteDB(attempt){
   attempt = attempt || 1;
   if(!REMOTE_URL || !SYNC_API_KEY) return;
@@ -192,19 +225,32 @@ function pushRemoteDB(attempt){
     if(!res.ok) throw new Error("HTTP "+res.status);
     DB.pushFailed = false;
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+    updateSyncStatusBadge();
   }).catch(()=>{
     DB.pushFailed = true;
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+    updateSyncStatusBadge();
     if(attempt < 6){
       clearTimeout(pushRetryTimer);
       pushRetryTimer = setTimeout(()=>pushRemoteDB(attempt+1), attempt*4000);
+    } else {
+      // Les 6 tentatives ont échoué : on arrête de spammer le réseau,
+      // mais le bandeau reste affiché (DB.pushFailed=true) jusqu'à ce
+      // qu'un prochain saveData() ou passage de fetchRemoteDB() relance
+      // une tentative qui, elle, réussira.
     }
   });
 }
 // Récupère la base partagée une fois au chargement. L'URL et la clé sont
 // désormais fixées dans le code (SYNC_API_URL / SYNC_API_KEY) : elles
 // n'ont plus besoin d'être conservées par appareil.
-async function fetchRemoteDB(){
+// CORRECTIF : retente automatiquement en cas d'échec (au lieu d'abandonner
+// en silence sur un "catch" vide) et affiche le bandeau d'erreur si la
+// récupération échoue vraiment — c'est ce chemin, pas l'envoi, qui posait
+// problème en ouvrant le lien depuis un autre appareil/navigateur.
+let pullRetryTimer = null;
+async function fetchRemoteDB(attempt){
+  attempt = attempt || 1;
   if(!REMOTE_URL) return;
   try{
     // Tant qu'un envoi récent n'est pas CONFIRMÉ réussi (DB.pushFailed) ou
@@ -216,11 +262,13 @@ async function fetchRemoteDB(){
       return;
     }
     const res = await fetch(REMOTE_URL+"/api/db");
-    if(!res.ok) return;
+    if(!res.ok) throw new Error("HTTP "+res.status);
     const { db } = await res.json();
     if(!db){
       // Le serveur n'a encore aucune donnée : on lui envoie notre copie
       // locale actuelle pour l'initialiser (si on a la clé admin).
+      DB.pullFailed = false;
+      updateSyncStatusBadge();
       pushRemoteDB();
       return;
     }
@@ -237,10 +285,24 @@ async function fetchRemoteDB(){
     migrateMemberLinks(db);
     if(!db.rewardTiers) db.rewardTiers=defaultRewardTiers();
     db.syncConfig = { apiUrl: REMOTE_URL, apiKey: "" };
+    db.pullFailed = false;
     DB = db;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    clearTimeout(pullRetryTimer);
+    updateSyncStatusBadge();
     render();
-  }catch(e){ /* serveur injoignable (ex: en veille) — on garde la copie locale */ }
+  }catch(e){
+    // Échec de la récupération (serveur injoignable, navigateur intégré
+    // qui bloque/coupe la requête, cold start Vercel trop long...).
+    // On NE garde PAS silencieusement une base vide par défaut sans le
+    // signaler : bandeau affiché + nouvelle tentative automatique.
+    DB.pullFailed = true;
+    updateSyncStatusBadge();
+    if(attempt < 8){
+      clearTimeout(pullRetryTimer);
+      pullRetryTimer = setTimeout(()=>fetchRemoteDB(attempt+1), Math.min(attempt*3000, 15000));
+    }
+  }
 }
 
 /* ---------------- Notifications FTD ---------------- */
@@ -357,6 +419,7 @@ function notifButtonHtml(key){
 
 
 let DB = loadData();
+document.addEventListener('DOMContentLoaded', updateSyncStatusBadge);
 let SESSION = null; // {role:'admin'} or {role:'member', id}
 let VIEW = "overview";
 let charts = {};
