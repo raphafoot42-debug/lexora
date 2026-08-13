@@ -213,35 +213,38 @@ function updateSyncStatusBadge(){
 // Envoie la base complète au serveur partagé (sans jamais y inclure la
 // clé API en clair, pour ne pas l'exposer publiquement via /api/db).
 // Retente automatiquement en cas d'échec au lieu d'abandonner en silence,
-// et affiche un bandeau clair si ça échoue pour de bon.
-function pushRemoteDB(attempt){
+// et capture le texte exact de l'erreur (y compris celle renvoyée par
+// Supabase) pour l'afficher dans le bandeau — pas besoin d'aller chercher
+// dans les Logs Vercel.
+async function pushRemoteDB(attempt){
   attempt = attempt || 1;
   if(!REMOTE_URL || !SYNC_API_KEY) return;
   const payload = JSON.parse(JSON.stringify(DB));
   payload.syncConfig = { apiUrl: REMOTE_URL, apiKey: "" };
-  fetch(REMOTE_URL+"/api/db", {
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":SYNC_API_KEY},
-    body: JSON.stringify(payload)
-  }).then(res=>{
-    if(!res.ok) throw new Error("HTTP "+res.status);
+  try{
+    const res = await fetch(REMOTE_URL+"/api/db", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":SYNC_API_KEY},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      let bodyText = "";
+      try{ bodyText = await res.text(); }catch(e2){}
+      throw new Error("HTTP "+res.status+(bodyText?" — "+bodyText.slice(0,300):""));
+    }
     DB.pushFailed = false;
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
     updateSyncStatusBadge();
-  }).catch(()=>{
+  }catch(e){
     DB.pushFailed = true;
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+    DB.pushErrorMsg = (e && e.message) ? e.message : String(e);
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e2){}
     updateSyncStatusBadge();
     if(attempt < 6){
       clearTimeout(pushRetryTimer);
       pushRetryTimer = setTimeout(()=>pushRemoteDB(attempt+1), attempt*4000);
-    } else {
-      // Les 6 tentatives ont échoué : on arrête de spammer le réseau,
-      // mais le bandeau reste affiché (DB.pushFailed=true) jusqu'à ce
-      // qu'un prochain saveData() ou passage de fetchRemoteDB() relance
-      // une tentative qui, elle, réussira.
     }
-  });
+  }
 }
 // Récupère la base partagée une fois au chargement. L'URL et la clé sont
 // désormais fixées dans le code (SYNC_API_URL / SYNC_API_KEY) : elles
@@ -301,8 +304,9 @@ async function fetchRemoteDB(attempt){
     // Échec de la récupération (serveur injoignable, navigateur intégré
     // qui bloque/coupe la requête, cold start Vercel trop long...).
     // On NE garde PAS silencieusement une base vide par défaut sans le
-    // signaler : bandeau affiché + nouvelle tentative automatique.
+    // signaler : bandeau affiché avec le détail exact + nouvelle tentative.
     DB.pullFailed = true;
+    DB.pullErrorMsg = (e && e.message) ? e.message : String(e);
     updateSyncStatusBadge();
     if(attempt < 8){
       clearTimeout(pullRetryTimer);
