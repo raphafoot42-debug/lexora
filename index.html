@@ -159,14 +159,28 @@ function loadData(){
   }catch(e){ console.error(e); }
   return { affiliates: [], passcode: "2909", mainTrackingLink: "", syncConfig: { apiUrl: "", apiKey: "" }, referralBonusPerFtd: 5, defaultBaseLink: "", defaultBaseLinkLabel: "Signup", defaultCommissionPerFtd: 30, allowSelfSignup: true, pendingSignups: [], memberLinks: defaultMemberLinks(), rewardTiers: defaultRewardTiers() };
 }
+
+/* ---------------- Synchronisation distante (Supabase via /api/db) ----------------
+   CORRECTIF (12/08) : l'envoi (push) est maintenant retenté automatiquement
+   en cas d'échec, et on ne laisse jamais une copie distante potentiellement
+   incomplète écraser une modification locale tant que l'envoi n'est pas
+   confirmé réussi (DB.pushFailed). Avant ce correctif, un échec d'envoi
+   silencieux + le passage du délai de 3 minutes pouvait faire "disparaître"
+   un sous-affilié fraîchement créé. */
+
 function saveData(){
   DB.localEditedAt = Date.now();
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){ console.error(e); }
   pushRemoteDB();
 }
+
+let pushRetryTimer = null;
+
 // Envoie la base complète au serveur partagé (sans jamais y inclure la
 // clé API en clair, pour ne pas l'exposer publiquement via /api/db).
-function pushRemoteDB(){
+// Retente automatiquement en cas d'échec au lieu d'abandonner en silence.
+function pushRemoteDB(attempt){
+  attempt = attempt || 1;
   if(!REMOTE_URL || !SYNC_API_KEY) return;
   const payload = JSON.parse(JSON.stringify(DB));
   payload.syncConfig = { apiUrl: REMOTE_URL, apiKey: "" };
@@ -174,7 +188,18 @@ function pushRemoteDB(){
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":SYNC_API_KEY},
     body: JSON.stringify(payload)
-  }).catch(()=>{});
+  }).then(res=>{
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    DB.pushFailed = false;
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+  }).catch(()=>{
+    DB.pushFailed = true;
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){}
+    if(attempt < 6){
+      clearTimeout(pushRetryTimer);
+      pushRetryTimer = setTimeout(()=>pushRemoteDB(attempt+1), attempt*4000);
+    }
+  });
 }
 // Récupère la base partagée une fois au chargement. L'URL et la clé sont
 // désormais fixées dans le code (SYNC_API_URL / SYNC_API_KEY) : elles
@@ -182,11 +207,11 @@ function pushRemoteDB(){
 async function fetchRemoteDB(){
   if(!REMOTE_URL) return;
   try{
-    // Si on vient de modifier quelque chose localement il y a moins de 3 minutes
-    // (ex : un lien ajouté en Paramètres), on ne laisse pas une copie distante
-    // potentiellement plus ancienne écraser ce changement — on retente juste
-    // l'envoi vers le serveur au passage, au cas où le premier envoi aurait échoué.
-    if(DB.localEditedAt && (Date.now() - DB.localEditedAt < 180000)){
+    // Tant qu'un envoi récent n'est pas CONFIRMÉ réussi (DB.pushFailed) ou
+    // qu'on a modifié localement il y a moins de 3 minutes, on ne laisse
+    // jamais une copie distante potentiellement plus ancienne/incomplète
+    // écraser ce changement — on retente juste l'envoi au passage.
+    if(DB.pushFailed || (DB.localEditedAt && (Date.now() - DB.localEditedAt < 180000))){
       pushRemoteDB();
       return;
     }
