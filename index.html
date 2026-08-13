@@ -185,9 +185,10 @@ function updateSyncStatusBadge(){
   let el = document.getElementById('syncStatusBadge');
   const failing = DB.pushFailed || DB.pullFailed;
   if(failing){
+    const detail = DB.pullFailed ? (DB.pullErrorMsg||"erreur inconnue") : (DB.pushErrorMsg||"erreur inconnue");
     const msg = DB.pullFailed
-      ? "⚠️ Impossible de récupérer les données du serveur partagé — ce que tu vois peut être incomplet ou obsolète. Nouvelle tentative en cours…"
-      : "⚠️ Synchronisation échouée — tes dernières modifications ne sont pas encore enregistrées sur le serveur partagé. Nouvelle tentative en cours…";
+      ? `⚠️ Impossible de récupérer les données du serveur — <span class="mono" style="font-weight:400">${esc(detail)}</span> — nouvelle tentative en cours…`
+      : `⚠️ Échec de l'envoi vers le serveur — <span class="mono" style="font-weight:400">${esc(detail)}</span> — nouvelle tentative en cours…`;
     if(!el){
       el = document.createElement('div');
       el.id = 'syncStatusBadge';
@@ -198,6 +199,7 @@ function updateSyncStatusBadge(){
         text-align:center; font-family:inherit;
         box-shadow:0 4px 16px -4px rgba(239,68,68,.6);
         display:flex; align-items:center; justify-content:center; gap:8px;
+        flex-wrap:wrap;
       `;
       document.body.prepend(el);
     }
@@ -262,7 +264,11 @@ async function fetchRemoteDB(attempt){
       return;
     }
     const res = await fetch(REMOTE_URL+"/api/db");
-    if(!res.ok) throw new Error("HTTP "+res.status);
+    if(!res.ok){
+      let bodyText = "";
+      try{ bodyText = await res.text(); }catch(e2){}
+      throw new Error("HTTP "+res.status+(bodyText?" — "+bodyText.slice(0,200):""));
+    }
     const { db } = await res.json();
     if(!db){
       // Le serveur n'a encore aucune donnée : on lui envoie notre copie
