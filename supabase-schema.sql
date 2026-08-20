@@ -1,145 +1,40 @@
--- ============================================================
--- Spark Idea — Schéma d'affiliation
--- À exécuter dans Supabase : Dashboard → SQL Editor → New query
--- ============================================================
+-- À coller dans Supabase → SQL Editor → New query → Run
 
--- Table des affiliés
-create table if not exists affiliates (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null,
-  referral_code text unique not null,        -- ex: TN2847, utilisé dans ?ref=TN2847
-  stripe_account_id text,                     -- acct_... (Stripe Connect), null tant que non connecté
-  stripe_connected boolean default false,
-  commission_rate integer not null default 10, -- taux actuel en %, calculé automatiquement ou verrouillé
-  rate_locked boolean not null default false,  -- si true, le palier automatique ne touche plus au taux
-  active_clients_count integer not null default 0, -- compteur mis à jour par trigger, sert au calcul de palier
-  parent_affiliate_id uuid references affiliates(id) on delete set null, -- rempli si ce compte vient de l'activation d'un sous-affilié
-  created_at timestamptz default now()
+create table if not exists app_db (
+  id int primary key default 1,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
 );
 
--- Paliers de commission (modifiables par l'admin sans toucher au code)
-create table if not exists commission_tiers (
-  id serial primary key,
-  min_clients integer not null,   -- seuil de clients ramenés pour atteindre ce palier
-  rate integer not null           -- taux en % à partir de ce seuil
-);
-insert into commission_tiers (min_clients, rate) values
-  (0, 10), (20, 20), (50, 30), (200, 50)
-on conflict do nothing;
-
--- Filleuls (clients ramenés par un affilié)
-create table if not exists referrals (
-  id uuid primary key default gen_random_uuid(),
-  affiliate_id uuid references affiliates(id) on delete set null,
-  customer_email text not null,
-  stripe_customer_id text,
-  stripe_subscription_id text,
-  plan text not null,             -- '9', '24', '74'
-  status text not null default 'active', -- 'active' | 'cancelled'
-  commission_rate_at_signup integer not null, -- taux figé au moment où CE client a été rattaché
-  referred_via_code text,         -- le ?ref= utilisé, pour traçabilité même si l'affilié change
-  created_at timestamptz default now(),
-  cancelled_at timestamptz
+create table if not exists push_subscriptions (
+  affiliate_id text primary key,
+  subscription jsonb not null,
+  updated_at timestamptz not null default now()
 );
 
--- Commissions versées (une ligne par mois par filleul actif)
-create table if not exists commission_payouts (
-  id uuid primary key default gen_random_uuid(),
-  affiliate_id uuid references affiliates(id) on delete set null,
-  referral_id uuid references referrals(id) on delete set null,
-  amount_cents integer not null,
-  stripe_transfer_id text,        -- id du virement Stripe Connect effectué
-  period text not null,           -- '2026-08' par exemple
-  status text not null default 'paid', -- 'paid' | 'failed'
-  created_at timestamptz default now()
-);
+alter table app_db enable row level security;
+alter table push_subscriptions enable row level security;
 
--- Packs / défis bonus créés par l'admin
-create table if not exists packs (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  description text not null,
-  reward_cents integer not null,
-  target_count integer,           -- ex: 10 clients à ramener, null si pas de compteur
-  target_plan text,                -- ex: '74' si le pack cible un forfait précis, null si tous
-  starts_at timestamptz default now(),
-  ends_at timestamptz,
-  active boolean default true,
-  created_by uuid references auth.users(id)
-);
-
--- Messages (affilié <-> admin)
-create table if not exists messages (
-  id uuid primary key default gen_random_uuid(),
-  affiliate_id uuid references affiliates(id) on delete cascade,
-  sender text not null,           -- 'affiliate' | 'admin'
-  body text not null,
-  read boolean default false,
-  created_at timestamptz default now()
-);
-
--- Sous-affiliés : recrutés par un affilié, qui gère et verse leur part lui-même.
--- Spark Idea se contente de suivre les stats à titre indicatif.
-create table if not exists sub_affiliates (
-  id uuid primary key default gen_random_uuid(),
-  affiliate_id uuid references affiliates(id) on delete cascade,
+create table if not exists postback_daily_stats (
   code text not null,
-  name text,
-  active boolean not null default true,
-  clients_count integer not null default 0,
-  revenue_generated_cents integer not null default 0,
-  created_at timestamptz default now(),
-  unique (affiliate_id, code)
+  date date not null,
+  clicks int not null default 0,
+  signups int not null default 0,
+  ftd int not null default 0,
+  deposits numeric not null default 0,
+  revenue numeric not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (code, date)
 );
 
--- Rattache un filleul au sous-affilié qui l'a apporté. Rempli automatiquement
--- par le webhook Stripe SI l'app principale relaie un paramètre sub= jusqu'à
--- session.metadata.sub au moment du checkout (sinon reste vide, pas bloquant).
-alter table referrals add column if not exists sub_affiliate_code text;
+create table if not exists postback_log (
+  id bigint generated always as identity primary key,
+  code text,
+  type text,
+  amount numeric,
+  raw jsonb,
+  received_at timestamptz not null default now()
+);
 
--- Taux du sous-affilié figé au moment du checkout, uniquement s'il a activé
--- son propre compte payé automatiquement (voir sub_affiliates.linked_affiliate_id).
-alter table referrals add column if not exists sub_commission_rate_at_signup integer;
-
--- Une fois qu'un sous-affilié crée son propre compte (email + mot de passe,
--- comme un affilié classique) pour être payé automatiquement, ce compte est
--- relié ici. Tant que c'est null, le sous-affilié reste "manuel" (payé à la
--- main par l'affilié parent, stats à titre indicatif seulement).
-alter table sub_affiliates add column if not exists linked_affiliate_id uuid references affiliates(id) on delete set null;
-
--- ============================================================
--- Row Level Security — chaque affilié ne voit que ses données
--- ============================================================
-alter table affiliates enable row level security;
-alter table referrals enable row level security;
-alter table commission_payouts enable row level security;
-alter table messages enable row level security;
-alter table packs enable row level security;
-alter table sub_affiliates enable row level security;
-
-create policy "Un affilié voit son propre profil"
-  on affiliates for select using (auth.uid() = id);
-
-create policy "Un affilié voit ses propres filleuls"
-  on referrals for select using (affiliate_id = auth.uid());
-
-create policy "Un affilié voit ses propres commissions"
-  on commission_payouts for select using (affiliate_id = auth.uid());
-
-create policy "Un affilié voit ses propres messages"
-  on messages for select using (affiliate_id = auth.uid());
-
-create policy "Un affilié peut écrire ses propres messages"
-  on messages for insert with check (affiliate_id = auth.uid() and sender = 'affiliate');
-
-create policy "Tout le monde connecté voit les packs actifs"
-  on packs for select using (active = true);
-
-create policy "Un affilié gère ses propres sous-affiliés"
-  on sub_affiliates for all
-  using (affiliate_id = auth.uid())
-  with check (affiliate_id = auth.uid());
-
--- NOTE: les actions admin (changer un taux, créer un pack, répondre aux messages)
--- passent par les routes API server-side avec la clé Supabase service_role,
--- qui contourne RLS — jamais exposée au navigateur. Voir lib/supabase/admin.ts
+alter table postback_daily_stats enable row level security;
+alter table postback_log enable row level security;
