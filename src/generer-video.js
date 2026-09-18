@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { getTTSProvider } = require('./tts-provider');
 
 const ROOT=path.join(__dirname,'..');
 const D=path.join(ROOT,'downloads');
@@ -183,14 +184,38 @@ function concatWithXfade(clips){
   run('ffmpeg',args,240000);
   return path.join(WORK,'visual.mp4');
 }
-function mixAudio(visual,music,seconds){
+function mixAudio(visual,music,voice,seconds){
   const tmp=path.join(WORK,'mixed.mp4');
-  run('ffmpeg',['-y','-i',visual,'-i',music,'-filter_complex',`[1:a]volume=0.08[m]`,'-map','0:v:0','-map','[m]','-t',seconds.toFixed(3),'-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp],180000);
+  if (voice && fs.existsSync(voice)) {
+    const fc = `[1:a]volume=0.07[m];[2:a]volume=1.0[v];[m][v]amix=inputs=2:duration=first:dropout_transition=2[aout]`;
+    run('ffmpeg',['-y','-i',visual,'-i',music,'-i',voice,'-filter_complex',fc,'-map','0:v:0','-map','[aout]','-t',seconds.toFixed(3),'-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp],180000);
+  } else {
+    run('ffmpeg',['-y','-i',visual,'-i',music,'-filter_complex',`[1:a]volume=0.08[m]`,'-map','0:v:0','-map','[m]','-t',seconds.toFixed(3),'-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp],180000);
+  }
   fs.copyFileSync(tmp,OUT);
 }
-function main(){
+async function main(){
   run('ffmpeg',['-version'],30000); run('ffprobe',['-version'],30000);
   const plan=readPlan();
+  const scriptPath=path.join(D,'voiceover-script.txt');
+  const ttsProvider = getTTSProvider();
+  let voiceTrack = null;
+
+  if (fs.existsSync(scriptPath)) {
+    const rawScript = fs.readFileSync(scriptPath, 'utf8').trim();
+    if (rawScript) {
+      const voiceOut = path.join(ASSETS, 'voiceover.mp3');
+      const wavOut = path.join(ASSETS, 'voiceover.wav');
+      console.log(`Synthèse vocale via le fournisseur: ${ttsProvider.name}...`);
+      const res = await ttsProvider.synthesize(rawScript, ttsProvider.name === 'windows-sapi' || ttsProvider.name === 'silent-fallback' ? wavOut : voiceOut);
+      if (res.success && fs.existsSync(res.filePath)) {
+        voiceTrack = res.filePath;
+        console.log(`Piste vocale générée avec succès (${ttsProvider.name}).`);
+      } else {
+        console.warn(`Synthèse vocale indisponible (${res.message}). Continuation sans voix-off.`);
+      }
+    }
+  }
   const session=path.join(ROOT,'videos','session.webm');
   const total=fs.existsSync(session)?duration(session):0;
   if(!total) throw new Error('Session navigateur introuvable ou vide.');
@@ -217,7 +242,7 @@ function main(){
   const visual=concatWithXfade(rendered);
   const visualDur=duration(visual);
   const music=writeMusic(visualDur);
-  mixAudio(visual,music,visualDur);
+  mixAudio(visual,music,voiceTrack,visualDur);
 
   const meta=ffprobeJson(OUT);
   const finalDur=Number(meta.format?.duration||0);
