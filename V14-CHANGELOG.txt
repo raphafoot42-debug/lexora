@@ -1,0 +1,17 @@
+SP Studio V14 — refonte du pipeline de démo produit
+
+Correctifs principaux
+- Le rendu final utilise la vidéo continue enregistrée par Playwright au lieu de transformer uniquement des captures fixes en clips.
+- Exploration adaptative du formulaire : le moteur peut d'abord renseigner un prénom puis continuer vers une étape suivante, au lieu de confondre le premier champ avec le champ d'idée.
+- Le curseur et les clics sont rendus discrètement visibles dans la session pour une sensation de démonstration réelle.
+- Les scènes utilisent des repères temporels de la session navigateur et des transitions courtes.
+- Les sous-titres sont rares, petits, centrés, cohérents et sans grands panneaux.
+- Les scènes d'action ne reçoivent pas de texte inutile.
+- La musique est générée directement en WAV PCM par Node, sans filtre aevalsrc fragile.
+- Le contrôle qualité vérifie format, durée et présence audio.
+- La voix Windows n'est pas forcée dans le rendu; le script narratif est exporté séparément.
+
+Limites assumées
+- V14 ne fabrique pas encore une voix humaine premium. Le fichier voiceover-script.txt sert de base à un futur TTS neuronal.
+- Le planificateur local repose encore sur des règles. Une connexion à un modèle de langage pourra remplacer ce planificateur sans changer le moteur de capture/rendu.
+- Le premier test doit être fait sur Windows, car Playwright doit atteindre le site réel de l'utilisateur.

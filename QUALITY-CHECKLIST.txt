@@ -1,0 +1,10 @@
+Avant de livrer une vidéo SP Studio, vérifier :
+[OK] 1080x1920
+[OK] 16-24 s
+[OK] piste audio présente
+[OK] au moins une interaction réelle
+[OK] produit visible
+[OK] pas de texte interne HOOK/CTA/DEBUG
+[OK] pas de gros panneau de texte
+[OK] pas de scène blanche accidentelle
+[OK] montage issu d'une session continue

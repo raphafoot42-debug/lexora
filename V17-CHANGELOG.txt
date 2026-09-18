@@ -1,0 +1,6 @@
+SP Studio V17
+
+- Contrôle qualité : 12–30 s acceptés. La cible 18–22 s devient un avertissement.
+- Manifest et storyboard alignés sur cette tolérance.
+- Installateur et version package mis à jour en V17.
+- Aucun autre comportement de génération n’est modifié.
