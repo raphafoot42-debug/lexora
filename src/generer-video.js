@@ -102,9 +102,9 @@ function renderSceneWithCaption(input,dur,caption,idx){
   if(font && caption){
     const ff=font.replace(/\\/g,'/').replace(/:/g,'\\:');
     const txt=escDraw(wrapCaption(caption));
-    const y=Math.max(1260, 1680 - (String(caption).split(/\s+/).length>8?90:0));
-    // Clean subtitle treatment: one style, no card, no oversized words.
-    vf.push(`drawtext=fontfile='${ff}':text='${txt}':fontcolor=white:fontsize=38:line_spacing=8:borderw=3:bordercolor=black@0.48:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,0.16),t/0.16,if(gt(t,${Math.max(0.25,dur-0.20).toFixed(2)}),(${dur.toFixed(2)}-t)/0.20,1))'`);
+    const y=Math.max(1260, 1650 - (String(caption).split(/\s+/).length>8?90:0));
+    // Premium social media subtitle overlay: semi-transparent dark box background + crisp white text
+    vf.push(`drawtext=fontfile='${ff}':text='${txt}':fontcolor=white:fontsize=40:line_spacing=10:box=1:boxcolor=black@0.62:boxborderw=18:x=(w-text_w)/2:y=${y}:alpha='if(lt(t,0.16),t/0.16,if(gt(t,${Math.max(0.25,dur-0.20).toFixed(2)}),(${dur.toFixed(2)}-t)/0.20,1))'`);
   }
   run('ffmpeg',['-y','-i',input,'-t',dur.toFixed(3),'-vf',vf.join(','),'-an','-r','30','-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',target],120000);
   return target;

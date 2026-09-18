@@ -37,12 +37,12 @@ const headline = has(siteText,/idée|idee/) && has(siteText,/plan|action|lancer|
   : 'Une idée de projet ? Fais-la avancer.';
 
 const scenes = [
-  {key:'hook', type:'hero', from:pickFirst('hero'), caption:'Tu as une idée. Mais par où commencer ?', duration:2.1},
-  {key:'demo', type:'demo', from:pickFirst('fill-idea') || pickFirst('fill-name'), caption:'Je teste ça en direct.', duration:4.1},
-  {key:'action', type:'action', from:pickFirst('before-action') || pickFirst('click'), caption:'', duration:2.2},
-  {key:'result', type:'result', from:pickLast('result','state-changed','click'), caption:'Voilà ce que Spark Idea construit.', duration:5.1},
-  {key:'proof', type:'proof', from:pickFirst('proof'), caption:proof ? proof + '.' : '', duration:2.3},
-  {key:'cta', type:'cta', from:pickLast('cta'), caption:'Une idée ? Transforme-la en plan d’action.', duration:2.5}
+  {key:'hook', type:'hero', from:pickFirst('hero'), caption:'Tu as une idée, mais tu ne sais pas par où commencer ?', duration:2.3},
+  {key:'demo', type:'demo', from:pickFirst('fill-idea') || pickFirst('fill-name'), caption:'Décris simplement ton projet...', duration:3.9},
+  {key:'action', type:'action', from:pickFirst('before-action') || pickFirst('click'), caption:'En un clic, Spark Idea résout ton blocage.', duration:2.3},
+  {key:'result', type:'result', from:pickLast('result','state-changed','click'), caption:'Regarde : tu obtiens un plan d’action structuré.', duration:4.8},
+  {key:'proof', type:'proof', from:pickFirst('proof'), caption:proof ? proof + ' • Prêt en secondes.' : 'Accès immédiat sans barrière.', duration:2.2},
+  {key:'cta', type:'cta', from:pickLast('cta'), caption:'Plus d’excuse : transforme ton idée en projet !', duration:2.5}
 ];
 
 const usable=scenes.map(s=>{
@@ -52,12 +52,12 @@ const usable=scenes.map(s=>{
 });
 
 const script=[
-  'Tu as une idée. Mais par où commencer ?',
-  'Je teste ça en direct.',
-  'Je lance l’analyse.',
-  'Voilà ce que Spark Idea construit.',
-  proof ? `C’est ${proof.toLowerCase()}.` : 'Un parcours simple, orienté vers l’action.',
-  'Une idée ? Transforme-la en plan d’action.'
+  'Tu as une idée, mais tu ne sais pas par où commencer ?',
+  'Décris simplement ton projet...',
+  'En un clic, Spark Idea résout ton blocage.',
+  'Regarde : tu obtiens un plan d’action structuré.',
+  proof ? `C’est ${proof.toLowerCase()}, prêt en quelques secondes.` : 'Accès immédiat et sans barrière.',
+  'Plus d’excuse : transforme ton idée en projet !'
 ];
 
 const plan={
