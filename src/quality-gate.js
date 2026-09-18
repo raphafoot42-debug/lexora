@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { validateTargetDomain } = require('./domain-validation');
 
 const ROOT=path.join(__dirname,'..');
 const OUT=path.join(ROOT,'videos','sp-studio-final.mp4');
 const REPORT=path.join(ROOT,'downloads','quality-report.json');
+const ANALYSIS=path.join(ROOT,'downloads','site-analysis.json');
 
 function probe(args){
   const r=spawnSync('ffprobe',args,{encoding:'utf8',windowsHide:true});
@@ -14,6 +16,18 @@ function probe(args){
 
 const failures=[];
 const warnings=[];
+
+if(fs.existsSync(ANALYSIS)){
+  try {
+    const siteData = JSON.parse(fs.readFileSync(ANALYSIS, 'utf8'));
+    const reqUrl = siteData.url;
+    const actualUrl = siteData.finalFacts?.url || siteData.initial?.url || reqUrl;
+    validateTargetDomain(reqUrl, actualUrl);
+  } catch(err) {
+    failures.push(`Validation domaine échouée : ${err.message}`);
+  }
+}
+
 if(!fs.existsSync(OUT)) failures.push('Fichier vidéo final introuvable.');
 else {
   try {

@@ -25,6 +25,13 @@ const { getTTSProvider, SilentFallbackProvider, OpenAITTSProvider, ElevenLabsPro
     const defaultProv = getTTSProvider();
     assert.ok(defaultProv);
 
+    // Test 5: Local config.json support
+    const cfgPath = path.join(__dirname, '..', 'config.json');
+    fs.writeFileSync(cfgPath, JSON.stringify({ ttsProvider: 'openai', openaiApiKey: 'sk-test-dummy' }), 'utf8');
+    const cfgProv = getTTSProvider();
+    assert.strictEqual(cfgProv.name, 'openai');
+    fs.rmSync(cfgPath, { force: true });
+
     console.log('test-tts-provider.test.js: OK');
   } finally {
     if (fs.existsSync(tmpOut)) fs.rmSync(tmpOut, { force: true });

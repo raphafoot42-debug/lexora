@@ -220,14 +220,25 @@ class SilentFallbackProvider extends TTSProvider {
   }
 }
 
-function getTTSProvider() {
-  const preferred = (process.env.TTS_PROVIDER || '').toLowerCase();
-
-  if (preferred === 'openai' || (process.env.OPENAI_API_KEY && preferred !== 'none')) {
-    return new OpenAITTSProvider();
+function readLocalConfig() {
+  const cfgPath = path.join(__dirname, '..', 'config.json');
+  if (fs.existsSync(cfgPath)) {
+    try { return JSON.parse(fs.readFileSync(cfgPath, 'utf8')); } catch {}
   }
-  if (preferred === 'elevenlabs' || (process.env.ELEVENLABS_API_KEY && preferred !== 'none')) {
-    return new ElevenLabsProvider();
+  return {};
+}
+
+function getTTSProvider() {
+  const cfg = readLocalConfig();
+  const preferred = (process.env.TTS_PROVIDER || cfg.ttsProvider || cfg.TTS_PROVIDER || '').toLowerCase();
+  const openaiKey = process.env.OPENAI_API_KEY || cfg.openaiApiKey || cfg.OPENAI_API_KEY;
+  const elevenKey = process.env.ELEVENLABS_API_KEY || cfg.elevenlabsApiKey || cfg.ELEVENLABS_API_KEY;
+
+  if (preferred === 'openai' || (openaiKey && !openaiKey.includes('COLLE_TA_CLE') && preferred !== 'none')) {
+    return new OpenAITTSProvider(openaiKey);
+  }
+  if (preferred === 'elevenlabs' || (elevenKey && !elevenKey.includes('COLLE_TA_CLE') && preferred !== 'none')) {
+    return new ElevenLabsProvider(elevenKey);
   }
   if (preferred === 'windows' || (process.platform === 'win32' && preferred !== 'none')) {
     return new WindowsSAPIProvider();

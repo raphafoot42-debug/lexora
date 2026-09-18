@@ -2,6 +2,7 @@ const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { validateTargetDomain } = require('./domain-validation');
 
 const ROOT = path.join(__dirname, '..');
 const CAPTURES = path.join(ROOT, 'captures');
@@ -258,6 +259,7 @@ async function run() {
 
   try {
     await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+    validateTargetDomain(url, page.url());
     await page.waitForSelector('body',{timeout:15000});
     await page.waitForFunction(()=>document.body?.innerText?.trim().length>30,null,{timeout:15000}).catch(()=>{});
     await page.waitForLoadState('networkidle',{timeout:9000}).catch(()=>{});
