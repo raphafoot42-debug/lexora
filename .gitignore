@@ -1,0 +1,10 @@
+node_modules/
+captures/
+videos/
+downloads/
+work/
+backups/
+*.mp4
+*.webm
+*.png
+*.jpg

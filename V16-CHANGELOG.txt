@@ -1,0 +1,7 @@
+SP Studio V16
+
+Correctif du parcours formulaire multi-champs.
+- Remplit tous les champs visibles pertinents avant de chercher le CTA.
+- Rescannage après remplissage pour les formulaires réactifs.
+- Le test-site-interaction vérifie désormais l état du bouton après remplissage complet.
+- Diagnostics enrichis si aucun bouton ne devient actif.

@@ -1,7 +1,18 @@
-
 {
-  "name": "affinix",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module"
+  "name": "sp-studio",
+  "version": "17.0.0",
+  "description": "SP Studio - générateur de vidéos produit à partir d'un site web",
+  "main": "src/serveur.js",
+  "scripts": {
+    "start": "node src/serveur.js",
+    "test": "node tests/test-domain-validation.test.js && node tests/test-tts-provider.test.js && node tests/test-quality-gate.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@playwright/test": "^1.63.0",
+    "express": "^5.2.1"
+  }
 }

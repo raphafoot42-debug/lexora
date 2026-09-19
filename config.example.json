@@ -1,0 +1,5 @@
+{
+  "ttsProvider": "auto",
+  "openaiApiKey": "COLLE_TA_CLE_OPENAI_ICI_SI_BESOIN",
+  "elevenlabsApiKey": "COLLE_TA_CLE_ELEVENLABS_ICI_SI_BESOIN"
+}

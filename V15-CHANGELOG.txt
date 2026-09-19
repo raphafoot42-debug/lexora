@@ -1,0 +1,7 @@
+SP Studio V15
+
+- Robust form interaction: never clicks disabled controls.
+- Retries controlled inputs with real keyboard typing and input/change events.
+- Uses exact DOM matching for the action button instead of fragile filtered indexes.
+- Saves a blocked-step screenshot and interaction audit instead of crashing when a form is not ready.
+- Adds src/test-site-interaction.js for a quick target-site form check.

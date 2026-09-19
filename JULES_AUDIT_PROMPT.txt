@@ -1,0 +1,112 @@
+JULES — FULL SP STUDIO AUDIT + REPAIR TASK
+
+You are auditing an existing Windows/PowerShell Node.js project called SP Studio. I do NOT want a superficial review and I do NOT want a list of hypothetical improvements. I want you to inspect the entire repository, reproduce the important failures, identify the root causes, implement the fixes, add tests/guards, and leave the project in a production-ready state for the intended use case.
+
+CONTEXT
+SP Studio is supposed to take a real public website URL and automatically create a short, professional, human-looking product-demo video for TikTok. The desired flow is:
+
+URL + title + style + description
+→ open the TARGET site with Playwright
+→ understand the site and its primary user flow
+→ interact with the real product like a user
+→ capture a coherent session of the real product
+→ choose the strongest moments
+→ create a concise storyboard
+→ render a 9:16 product demo
+→ add captions/music/voice without making it look AI-generated
+→ run a quality gate
+→ only then mark the MP4 as ready.
+
+KNOWN FAILURES THAT MUST BE INVESTIGATED AND FIXED
+
+1) TARGET CAPTURE BUG
+At one point the generated video was filming SP Studio's own localhost UI instead of the target site. This must be impossible after your changes.
+Add an explicit assertion that the active page/domain being recorded matches the requested target URL/domain. If not, abort the render.
+
+2) BROWSER INTERACTION BUG
+The Spark Idea submit button was previously found while disabled. The test showed:
+- name field placeholder: “Prénom”
+- idea field placeholder: “Ex : une appli qui aide les artisans à faire leurs devis en 2 minutes...”
+- button: “Analyser →”
+The original script only filled the first field, leaving the button disabled. Make field discovery and interaction robust to disabled buttons, reactive frontends, dynamic fields, and delayed enablement.
+
+3) VIDEO QUALITY PROBLEM
+Earlier renders looked like generic AI templates: large empty areas, white/black text cards, repetitive scene cuts, static captures, huge labels, unnatural transitions, and internal labels such as HOOK/CTA/RESULT appearing in the video.
+The final system should primarily show the real product in action. Avoid explanatory cards unless they are genuinely useful and visually integrated.
+
+4) TIMING / DURATION BUGS
+Earlier renders failed quality checks at 34.07 s and 15.03 s because the allowed range was too rigid. Duration policy must be flexible and content-driven. Target roughly 18–24 seconds for TikTok, but accept a valid shorter or slightly longer result when the story naturally requires it.
+More importantly, narration must not end far before the video. Validate audio/video duration relationship.
+
+5) VOICE BUG / QUALITY
+Windows TTS previously failed on scene 2. Local Windows TTS may be used as a fallback, but it should not be the final-quality voice. Build a provider abstraction for neural TTS (for example ElevenLabs/Azure/Google/OpenAI-compatible provider via environment variables) without hard-coding credentials. Local fallback must remain available for testing.
+Do not pretend Windows SAPI sounds human. The architecture should make realistic TTS the preferred production path.
+
+6) FFmpeg / FONTCONFIG BUG
+FFmpeg failed with Fontconfig on Windows because drawtext used a font reference that required unavailable fontconfig config. Use a real Windows font path / fontfile discovered at runtime. Escape the path correctly. Do not depend on Linux font paths.
+
+7) FFmpeg MUSIC BUG
+A complex aevalsrc filter failed on Windows with:
+“No option name near '48000\\:d=35'”
+Replace fragile expression-string handling with robust filter arguments or file-based generation. Test the exact Windows command shape.
+
+8) OUTPUT / QUALITY GATE
+The quality gate must check at least:
+- target site footage actually present
+- resolution/aspect ratio
+- valid video stream
+- valid audio stream when audio is enabled
+- duration policy
+- no internal debug/storyboard labels
+- no unexpectedly blank/near-blank scene dominating the video
+- audio not dramatically shorter than video
+- final MP4 readable by ffprobe
+- stale previous output not mistaken for the current render
+
+9) WINDOWS RUNTIME
+This project runs on Windows with PowerShell 7, Node 24.x, npm, Playwright, FFmpeg 9.x. Do not rely on Linux shell syntax. Use cross-platform Node APIs where possible and explicit Windows handling where needed.
+
+10) SECURITY / ROBUSTNESS
+Validate URL input. Prevent shell injection when invoking FFmpeg or other processes. Sanitize generated filenames. Never expose API keys in logs or committed files. Handle timeouts, partial files, browser crashes, and retries cleanly.
+
+11) ARCHITECTURE
+I want you to distinguish these layers:
+A. Site explorer / interaction agent
+B. Observation model
+C. Creative planner / storyboard
+D. Capture selection
+E. Renderer
+F. Voice provider
+G. Music provider
+H. Quality gate
+Do not keep stuffing more logic into a single generer-video.js file.
+
+12) CREATIVE BEHAVIOR
+For the target site, a good demo is closer to:
+“Tu as une idée mais tu ne sais pas par où commencer ?”
+→ show real Spark Idea UI
+→ type a realistic project idea
+→ click Analyse
+→ wait
+→ show real generated result
+→ show one or two useful result areas
+→ concise CTA.
+Do not narrate that you are doing “an analysis of the website”. The audience should feel that a real person is demonstrating the product.
+
+WORKFLOW FOR THIS TASK
+1. Read every source file, README, installer, test, and changelog.
+2. Run the project and reproduce the current failures where possible.
+3. Produce a concise plan that names the root causes and files to change.
+4. Implement ALL root-cause fixes in one coherent pass.
+5. Add regression tests for each known failure above.
+6. Run syntax checks, tests, and at least one real render smoke test when the environment allows.
+7. Inspect the rendered file with ffprobe.
+8. Update README and changelog.
+9. Return a concise final report with:
+   - root causes found
+   - fixes implemented
+   - tests run and results
+   - exact remaining limitations, if any
+
+IMPORTANT
+Do not answer with “this is complex” or “you should improve X”. Make the changes. Do not optimize for the number of commits. Optimize for one coherent, tested repair pass.
