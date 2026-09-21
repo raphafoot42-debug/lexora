@@ -233,12 +233,14 @@ function getTTSProvider() {
   const preferred = (process.env.TTS_PROVIDER || cfg.ttsProvider || cfg.TTS_PROVIDER || '').toLowerCase();
   const openaiKey = process.env.OPENAI_API_KEY || cfg.openaiApiKey || cfg.OPENAI_API_KEY;
   const elevenKey = process.env.ELEVENLABS_API_KEY || cfg.elevenlabsApiKey || cfg.ELEVENLABS_API_KEY;
+  const elevenVoice = process.env.ELEVENLABS_VOICE_ID || cfg.elevenlabsVoiceId || cfg.ELEVENLABS_VOICE_ID || undefined;
+  const openaiVoice = process.env.OPENAI_VOICE || cfg.openaiVoice || undefined;
 
   if (preferred === 'openai' || (openaiKey && !openaiKey.includes('COLLE_TA_CLE') && preferred !== 'none')) {
-    return new OpenAITTSProvider(openaiKey);
+    return new OpenAITTSProvider(openaiKey, openaiVoice || process.env.OPENAI_VOICE || 'nova');
   }
   if (preferred === 'elevenlabs' || (elevenKey && !elevenKey.includes('COLLE_TA_CLE') && preferred !== 'none')) {
-    return new ElevenLabsProvider(elevenKey);
+    return new ElevenLabsProvider(elevenKey, elevenVoice || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM');
   }
   if (preferred === 'windows' || (process.platform === 'win32' && preferred !== 'none')) {
     return new WindowsSAPIProvider();

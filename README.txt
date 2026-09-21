@@ -1,29 +1,38 @@
-SP Studio V14
+SP Studio V18
 ============
 
 Objectif
 --------
-Créer une vidéo produit courte et crédible à partir d'une URL, sans demander à l'utilisateur de fournir des captures ou six vidéos préparées à la main.
+Créer automatiquement une courte vidéo produit verticale à partir d'une URL réelle, en montrant le produit réel plutôt qu'un template artificiel.
 
 Pipeline
 --------
-1. Playwright ouvre le site avec un vrai viewport mobile.
-2. Une seule session navigateur continue est enregistrée.
-3. Le moteur explore le parcours utilisateur et tente de remplir les champs de manière adaptative.
-4. Le moteur marque les moments utiles de cette session.
-5. Un storyboard court est construit à partir des moments réellement observés.
-6. FFmpeg extrait les portions vidéo de la session au lieu de recréer le montage à partir d'images fixes.
-7. Les textes sont courts, alignés, cohérents et placés directement sur l'image; pas de grandes cartes "HOOK/CTA".
-8. Une musique légère est générée en PCM par Node, puis mixée à faible volume.
-9. Un contrôle qualité vérifie le format, la durée et la présence audio.
+1. Playwright ouvre l'URL cible dans une session mobile continue.
+2. Le moteur vérifie à chaque étape que la page observée reste sur le domaine demandé.
+3. Les champs visibles pertinents sont remplis et le moteur attend un vrai CTA actif ; aucun bouton désactivé n'est forcé.
+4. Les moments réellement observés sont marqués dans la session.
+5. Le storyboard utilise uniquement des plages vidéo observées.
+6. FFmpeg extrait ces portions de la session et les assemble en 1080x1920.
+7. Les captions restent courtes et intégrées à l'image ; aucun label interne de debug n'est rendu.
+8. Une musique PCM légère est générée localement et mixée avec la narration lorsqu'un fournisseur TTS est disponible.
+9. Le quality gate vérifie cible, session récente, résolution, durée, audio, synchronisation, texte interdit, écran noir et plans figés trop longs.
+10. Si une scène réelle n'est pas disponible, le rendu échoue au lieu d'inventer une scène avec une image fixe.
 
 Voix
 ----
-V14 ne force pas une voix Windows dans le rendu. Le script de narration est écrit dans downloads/voiceover-script.txt pour un futur branchement vers une voix neuronale réaliste.
+Le moteur possède une interface TTS. Les fournisseurs OpenAI/ElevenLabs peuvent être activés par variables d'environnement. Windows SAPI reste un fallback local pour les tests. Aucun secret ne doit être commité.
 
-Important
----------
-La V14 doit être testée sur la vraie machine Windows avec le vrai site cible. Le build Linux ne peut pas valider les interactions réseau de la machine utilisateur.
+Windows
+-------
+Runtime cible : Windows + PowerShell 7, Node 20+ / 24.x, Playwright et FFmpeg.
 
+Installation
+------------
+1. Exécuter INSTALL-SP-Studio.ps1.
+2. Vérifier `node --version`, `npm --version`, `ffmpeg -version` et `ffprobe -version`.
+3. Lancer `node .\src\serveur.js`.
+4. Ouvrir http://localhost:3000.
 
-V17 : le contrôle qualité accepte les formats courts 12–30 s ; 18–22 s reste la cible idéale et produit un avertissement seulement.
+Tests
+-----
+`npm test` lance les tests de validation. Le test E2E réel nécessite Playwright installé et un accès au site cible.

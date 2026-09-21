@@ -1,11 +1,12 @@
 {
   "name": "sp-studio",
-  "version": "17.0.0",
+  "version": "18.0.0",
   "description": "SP Studio - générateur de vidéos produit à partir d'un site web",
   "main": "src/serveur.js",
   "scripts": {
     "start": "node src/serveur.js",
-    "test": "node tests/test-domain-validation.test.js && node tests/test-tts-provider.test.js && node tests/test-quality-gate.test.js"
+    "test": "node tests/test-domain-validation.test.js && node tests/test-tts-provider.test.js && node tests/test-quality-gate.test.js && node tests/test-render-policy.test.js",
+    "pipeline": "node src/analyser-site.js --url https://spark-idea-two.vercel.app && node src/agent-planner.js && node src/generer-video.js"
   },
   "keywords": [],
   "author": "",

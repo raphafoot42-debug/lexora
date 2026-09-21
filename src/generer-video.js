@@ -77,24 +77,6 @@ function extractSessionSegment(session,scene,index,total){
   run('ffmpeg',['-y','-ss',s.toFixed(3),'-i',session,'-t',(t-s).toFixed(3),'-an','-vf',vf,'-r','30','-c:v','libx264','-preset','medium','-crf','19','-pix_fmt','yuv420p',target],120000);
   return {file:target,duration:duration(target)};
 }
-function stillSegment(image,scene,index){
-  const target=path.join(ASSETS,`scene-${String(index).padStart(2,'0')}-still.mp4`);
-  const dur=Math.max(1.8,Math.min(5.5,Number(scene.duration)||3));
-  const font=findFont();
-  const vf=[cropScaleFilter()];
-  if(font && scene.caption){
-    const ff=font.replace(/\\/g,'/').replace(/:/g,'\\:');
-    const text=escDraw(scene.caption);
-    vf.push(`drawtext=fontfile='${ff}':text='${text}':fontcolor=white:fontsize=42:borderw=2:bordercolor=black@0.55:x=76:y=1540:line_spacing=8`);
-  }
-  run('ffmpeg',['-y','-loop','1','-i',image,'-t',dur.toFixed(3),'-an','-vf',vf.join(','),'-r','30','-c:v','libx264','-preset','medium','-crf','19','-pix_fmt','yuv420p',target],120000);
-  return {file:target,duration:duration(target)};
-}
-function makeCaptionOverlay(text,dur,idx){
-  const out=path.join(ASSETS,`cap-${idx}.txt`);
-  fs.writeFileSync(out,String(text||''),'utf8');
-  return out;
-}
 function renderSceneWithCaption(input,dur,caption,idx){
   const target=path.join(ASSETS,`render-${String(idx).padStart(2,'0')}.mp4`);
   const font=findFont();
@@ -184,58 +166,87 @@ function concatWithXfade(clips){
   run('ffmpeg',args,240000);
   return path.join(WORK,'visual.mp4');
 }
-function mixAudio(visual,music,voice,seconds){
-  const tmp=path.join(WORK,'mixed.mp4');
+function mixAudio(visual, music, voice, seconds) {
+  const tmp = path.join(WORK, 'mixed.mp4');
+  const durationExpr = seconds.toFixed(3);
   if (voice && fs.existsSync(voice)) {
-    const fc = `[1:a]volume=0.07[m];[2:a]volume=1.0[v];[m][v]amix=inputs=2:duration=first:dropout_transition=2[aout]`;
-    run('ffmpeg',['-y','-i',visual,'-i',music,'-i',voice,'-filter_complex',fc,'-map','0:v:0','-map','[aout]','-t',seconds.toFixed(3),'-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp],180000);
+    const fc = [
+      `[1:a]volume=0.08,apad[m]`,
+      `[2:a]volume=1.0,apad[v]`,
+      `[m][v]amix=inputs=2:duration=longest:dropout_transition=0[a0]`,
+      `[a0]atrim=duration=${durationExpr},asetpts=N/SR/TB[aout]`
+    ].join(';');
+    run('ffmpeg', [
+      '-y','-i',visual,'-i',music,'-i',voice,
+      '-filter_complex',fc,
+      '-map','0:v:0','-map','[aout]',
+      '-t',durationExpr,
+      '-c:v','copy','-c:a','aac','-b:a','160k','-movflags','+faststart',tmp
+    ],180000);
   } else {
-    run('ffmpeg',['-y','-i',visual,'-i',music,'-filter_complex',`[1:a]volume=0.08[m]`,'-map','0:v:0','-map','[m]','-t',seconds.toFixed(3),'-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp],180000);
+    const fc = `[1:a]volume=0.08,apad,atrim=duration=${durationExpr},asetpts=N/SR/TB[aout]`;
+    run('ffmpeg', [
+      '-y','-i',visual,'-i',music,
+      '-filter_complex',fc,
+      '-map','0:v:0','-map','[aout]',
+      '-t',durationExpr,
+      '-c:v','copy','-c:a','aac','-b:a','128k','-movflags','+faststart',tmp
+    ],180000);
   }
-  fs.copyFileSync(tmp,OUT);
+  fs.copyFileSync(tmp, OUT);
 }
-async function main(){
-  run('ffmpeg',['-version'],30000); run('ffprobe',['-version'],30000);
-  const plan=readPlan();
-  const scriptPath=path.join(D,'voiceover-script.txt');
-  const ttsProvider = getTTSProvider();
-  let voiceTrack = null;
 
-  if (fs.existsSync(scriptPath)) {
-    const rawScript = fs.readFileSync(scriptPath, 'utf8').trim();
-    if (rawScript) {
-      const voiceOut = path.join(ASSETS, 'voiceover.mp3');
-      const wavOut = path.join(ASSETS, 'voiceover.wav');
+async function main(){
+  run('ffmpeg',['-version'],30000);
+  run('ffprobe',['-version'],30000);
+  const plan=readPlan();
+  const analysisPath=path.join(D,'site-analysis.json');
+  if(!fs.existsSync(analysisPath)) throw new Error('site-analysis.json introuvable.');
+  const analysis=JSON.parse(fs.readFileSync(analysisPath,'utf8'));
+  if(!analysis.url) throw new Error('URL cible absente de site-analysis.json.');
+
+  // Never reuse a previous render or a previous asset when starting a new job.
+  for(const f of fs.readdirSync(ASSETS)) fs.rmSync(path.join(ASSETS,f),{force:true});
+  for(const f of fs.readdirSync(WORK)) if(f!=='assets') fs.rmSync(path.join(WORK,f),{force:true});
+  fs.rmSync(OUT,{force:true});
+
+  const scriptPath=path.join(D,'voiceover-script.txt');
+  const ttsProvider=getTTSProvider();
+  let voiceTrack=null;
+  if(fs.existsSync(scriptPath)){
+    const rawScript=fs.readFileSync(scriptPath,'utf8').trim();
+    if(rawScript){
+      const voiceOut=path.join(ASSETS,'voiceover.mp3');
+      const wavOut=path.join(ASSETS,'voiceover.wav');
+      const targetPath=(ttsProvider.name==='windows-sapi'||ttsProvider.name==='silent-fallback')?wavOut:voiceOut;
       console.log(`Synthèse vocale via le fournisseur: ${ttsProvider.name}...`);
-      const res = await ttsProvider.synthesize(rawScript, ttsProvider.name === 'windows-sapi' || ttsProvider.name === 'silent-fallback' ? wavOut : voiceOut);
-      if (res.success && fs.existsSync(res.filePath)) {
-        voiceTrack = res.filePath;
+      const res=await ttsProvider.synthesize(rawScript,targetPath);
+      if(res.success && fs.existsSync(res.filePath) && fs.statSync(res.filePath).size>100){
+        voiceTrack=res.filePath;
         console.log(`Piste vocale générée avec succès (${ttsProvider.name}).`);
-      } else {
-        console.warn(`Synthèse vocale indisponible (${res.message}). Continuation sans voix-off.`);
+      }else{
+        console.warn(`Synthèse vocale indisponible (${res.message||'erreur inconnue'}). Le rendu continuera sans narration.`);
       }
     }
   }
+
   const session=path.join(ROOT,'videos','session.webm');
   const total=fs.existsSync(session)?duration(session):0;
   if(!total) throw new Error('Session navigateur introuvable ou vide.');
 
-  for(const f of fs.readdirSync(ASSETS)) fs.rmSync(path.join(ASSETS,f),{force:true});
-  for(const f of fs.readdirSync(WORK)) if(f!=='assets') fs.rmSync(path.join(WORK,f),{force:true});
-
   const rendered=[];
   for(let i=0;i<plan.scenes.length;i++){
-    const s=plan.scenes[i];
-    let clip=null;
-    if(Number.isFinite(s.sourceStart) && Number.isFinite(s.sourceEnd) && s.sourceEnd>s.sourceStart+0.7){
-      try { clip=extractSessionSegment(session,s,i+1,total); } catch(e) { console.warn(`Fallback scène ${s.key}: ${e.message}`); }
+    const scene=plan.scenes[i];
+    if(!Number.isFinite(Number(scene.sourceStart)) || !Number.isFinite(Number(scene.sourceEnd)) || Number(scene.sourceEnd)<=Number(scene.sourceStart)){
+      throw new Error(`Scène ${scene.key} sans plage vidéo observée. SP Studio refuse de fabriquer une scène artificielle.`);
     }
-    if(!clip){
-      const fallback=path.join(ROOT,'captures', i===0?'01-hero.png':i===3?'04-result.png':i===4?'05-proof.png':'06-cta.png');
-      if(!fs.existsSync(fallback)) throw new Error(`Aucune source pour la scène ${s.key}.`);
-      clip=stillSegment(fallback,s,i+1);
+    let clip;
+    try{
+      clip=extractSessionSegment(session,scene,i+1,total);
+    }catch(e){
+      throw new Error(`Capture inutilisable pour la scène ${scene.key}: ${e.message}`);
     }
-    const captioned=renderSceneWithCaption(clip.file,clip.duration,s.caption,i+1);
+    const captioned=renderSceneWithCaption(clip.file,clip.duration,scene.caption,i+1);
     rendered.push(captioned);
   }
 
@@ -246,14 +257,26 @@ async function main(){
 
   const meta=ffprobeJson(OUT);
   const finalDur=Number(meta.format?.duration||0);
+  const audioStream=meta.streams?.find(s=>s.codec_type==='audio');
   const manifest={
-    schemaVersion:5,
+    schemaVersion:6,
     createdAt:new Date().toISOString(),
-    url:JSON.parse(fs.readFileSync(path.join(D,'site-analysis.json'),'utf8')).url,
+    url:analysis.url,
     style:plan.style,
     output:'/videos/sp-studio-final.mp4',
-    scenes:plan.scenes.map((s,i)=>({key:s.key,caption:s.caption,duration:duration(rendered[i]),sourceStart:s.sourceStart,sourceEnd:s.sourceEnd})),
-    audio:{music:true,narration:false},
+    scenes:plan.scenes.map((scene,i)=>({
+      key:scene.key,
+      caption:scene.caption,
+      duration:duration(rendered[i]),
+      sourceStart:scene.sourceStart,
+      sourceEnd:scene.sourceEnd
+    })),
+    audio:{
+      music:true,
+      narration:Boolean(voiceTrack),
+      provider:voiceTrack?ttsProvider.name:null,
+      duration:Number(audioStream?.duration||finalDur)
+    },
     durations:{visual:visualDur,final:finalDur},
     design:{
       vertical:'1080x1920',
@@ -262,14 +285,16 @@ async function main(){
       directCaption:true,
       giantTextCards:false,
       debugLabels:false,
+      syntheticStillFallback:false,
       transitions:'short-dissolve'
     },
-    qualityTarget:{minSeconds:12,maxSeconds:30,idealMinSeconds:18,idealMaxSeconds:22}
+    qualityTarget:{minSeconds:12,maxSeconds:28,idealMinSeconds:18,idealMaxSeconds:24}
   };
   fs.writeFileSync(path.join(D,'render-manifest.json'),JSON.stringify(manifest,null,2),'utf8');
   console.log(`Vidéo finale créée : ${OUT}`);
   console.log(`Durée : ${finalDur.toFixed(2)} s`);
+  console.log(`Narration : ${voiceTrack?ttsProvider.name:'non disponible'}`);
 
-  run('node',[path.join(__dirname,'quality-gate.js')],30000);
+  run(process.execPath,[path.join(__dirname,'quality-gate.js')],30000);
 }
-main();
+main().catch(e=>{ console.error(e.stack||e.message||e); process.exit(1); });

@@ -1,0 +1,22 @@
+SP Studio V18 — durcissement du pipeline
+
+Correctifs majeurs
+- Validation stricte de la cible : un site distant ne peut plus être remplacé par localhost ou un autre domaine.
+- Correction du dernier risque de désynchronisation entre une liste de boutons filtrée et les index DOM utilisés pour cliquer.
+- Le CTA final utilise désormais une résolution sémantique du bouton/lien au lieu d'un index DOM fragile.
+- La session vidéo précédente est supprimée au début d'une nouvelle exploration.
+- Le storyboard ne crée plus de scène à partir d'une capture fixe si aucun moment vidéo observé n'existe.
+- Le rendu échoue proprement lorsqu'une scène n'a pas de source vidéo réelle.
+- Correction d'un bug où les fichiers TTS générés pouvaient être supprimés juste après leur création lors du nettoyage des assets.
+- Mix audio renforcé : padding + durée bornée pour garder l'audio aligné sur la vidéo.
+- Manifest corrigé pour indiquer la présence réelle de la narration et son fournisseur.
+- Quality gate renforcé : session récente, cible, audio/video, captions interdites, stale output, blackdetect et freezedetect.
+- Suppression du faux fallback silencieux vers des scènes fixes.
+
+Direction créative
+- Captions plus factuelles et liées aux actions observées.
+- Les affirmations non vérifiées comme « résout ton blocage » ne sont plus générées par le planner.
+
+Tests
+- Validation domaine avec redirection vers autre domaine et localhost.
+- Vérifications de syntaxe des modules Node.
