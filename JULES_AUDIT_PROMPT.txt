@@ -1,263 +1,112 @@
-JULES — SP STUDIO V18 : AUDIT FINAL + RÉPARATION COMPLÈTE
+JULES — FULL SP STUDIO AUDIT + REPAIR TASK
 
-Je te donne une nouvelle base SP Studio V18 déjà durcie par un premier passage technique. Ton travail maintenant n'est PAS de simplement commenter le code. Tu dois auditer toute la base, exécuter les tests disponibles, reproduire les problèmes importants quand l'environnement le permet, corriger réellement tout ce qui doit l'être, puis laisser le dépôt propre, cohérent et testable.
+You are auditing an existing Windows/PowerShell Node.js project called SP Studio. I do NOT want a superficial review and I do NOT want a list of hypothetical improvements. I want you to inspect the entire repository, reproduce the important failures, identify the root causes, implement the fixes, add tests/guards, and leave the project in a production-ready state for the intended use case.
 
-OBJECTIF PRODUIT
-SP Studio reçoit une URL réelle et doit produire automatiquement une courte vidéo produit verticale professionnelle :
-URL → exploration réelle du site → interaction réelle → observation du résultat → sélection des meilleurs moments → storyboard → capture réelle → montage 1080x1920 → narration/musique → contrôle qualité → MP4 final.
+CONTEXT
+SP Studio is supposed to take a real public website URL and automatically create a short, professional, human-looking product-demo video for TikTok. The desired flow is:
 
-Le rendu doit ressembler à une vraie démo produit humaine, pas à un template « vidéo IA ».
+URL + title + style + description
+→ open the TARGET site with Playwright
+→ understand the site and its primary user flow
+→ interact with the real product like a user
+→ capture a coherent session of the real product
+→ choose the strongest moments
+→ create a concise storyboard
+→ render a 9:16 product demo
+→ add captions/music/voice without making it look AI-generated
+→ run a quality gate
+→ only then mark the MP4 as ready.
 
-============================================================
-CE QUI A ÉTÉ AJOUTÉ / CORRIGÉ DANS CETTE V18
-============================================================
+KNOWN FAILURES THAT MUST BE INVESTIGATED AND FIXED
 
-1. VALIDATION STRICTE DE LA CIBLE
-- src/domain-validation.js a été renforcé.
-- Un site distant demandé ne peut plus être remplacé par localhost, 127.0.0.1 ou un autre domaine.
-- Les redirections vers un autre hostname sont refusées.
-- Une équivalence www / non-www est tolérée.
-- Des tests couvrent maintenant : bonne cible, localhost, autre domaine et cas local.
+1) TARGET CAPTURE BUG
+At one point the generated video was filming SP Studio's own localhost UI instead of the target site. This must be impossible after your changes.
+Add an explicit assertion that the active page/domain being recorded matches the requested target URL/domain. If not, abort the render.
 
-2. DERNIER BUG DE SÉLECTION DU CTA CORRIGÉ
-- Dans src/analyser-site.js, la sélection d'un bouton n'utilise plus l'index d'une liste filtrée pour cliquer dans une autre liste DOM.
-- Une résolution sémantique actionLocator() est utilisée : rôle + nom exact, puis fallback textuel.
-- Un bouton doit être visible et non désactivé avant d'être retourné.
-- Le CTA final utilise la même logique robuste.
+2) BROWSER INTERACTION BUG
+The Spark Idea submit button was previously found while disabled. The test showed:
+- name field placeholder: “Prénom”
+- idea field placeholder: “Ex : une appli qui aide les artisans à faire leurs devis en 2 minutes...”
+- button: “Analyser →”
+The original script only filled the first field, leaving the button disabled. Make field discovery and interaction robust to disabled buttons, reactive frontends, dynamic fields, and delayed enablement.
 
-3. FORMULAIRE RÉACTIF CONSERVÉ / DURCI
-- Le moteur continue de remplir tous les champs visibles pertinents avant de chercher le CTA.
-- fill() + frappe réelle + événements input/change/blur sont conservés.
-- Le bouton disabled n'est jamais forcé.
-- Le moteur attend que le frontend réactif rende réellement l'action disponible.
+3) VIDEO QUALITY PROBLEM
+Earlier renders looked like generic AI templates: large empty areas, white/black text cards, repetitive scene cuts, static captures, huge labels, unnatural transitions, and internal labels such as HOOK/CTA/RESULT appearing in the video.
+The final system should primarily show the real product in action. Avoid explanatory cards unless they are genuinely useful and visually integrated.
 
-4. SESSION VIDÉO ANCIENNE SUPPRIMÉE
-- Au début d'une nouvelle exploration, videos/session.webm est supprimé.
-- L'objectif est d'empêcher qu'une ancienne session soit utilisée par erreur.
+4) TIMING / DURATION BUGS
+Earlier renders failed quality checks at 34.07 s and 15.03 s because the allowed range was too rigid. Duration policy must be flexible and content-driven. Target roughly 18–24 seconds for TikTok, but accept a valid shorter or slightly longer result when the story naturally requires it.
+More importantly, narration must not end far before the video. Validate audio/video duration relationship.
 
-5. STORYBOARD BASÉ SUR LES MOMENTS OBSERVÉS
-- src/agent-planner.js a été réécrit pour privilégier uniquement les milestones réellement observés.
-- Le planner refuse maintenant de fabriquer un storyboard avec trop peu de moments observés.
-- Les captions sont plus factuelles.
-- Les affirmations non vérifiées du type « Spark Idea résout ton blocage » ont été supprimées.
-- Le plan contient explicitement realProductOnly et noSyntheticStillFallback.
+5) VOICE BUG / QUALITY
+Windows TTS previously failed on scene 2. Local Windows TTS may be used as a fallback, but it should not be the final-quality voice. Build a provider abstraction for neural TTS (for example ElevenLabs/Azure/Google/OpenAI-compatible provider via environment variables) without hard-coding credentials. Local fallback must remain available for testing.
+Do not pretend Windows SAPI sounds human. The architecture should make realistic TTS the preferred production path.
 
-6. PLUS DE FALLBACK IMAGE FIXE SILENCIEUX
-- src/generer-video.js ne transforme plus silencieusement une capture PNG en scène vidéo si une scène réelle manque.
-- Si une scène n'a pas de plage vidéo observée valide, le rendu échoue proprement.
-- C'est volontaire : mieux vaut signaler une capture insuffisante que produire une vidéo artificielle.
+6) FFmpeg / FONTCONFIG BUG
+FFmpeg failed with Fontconfig on Windows because drawtext used a font reference that required unavailable fontconfig config. Use a real Windows font path / fontfile discovered at runtime. Escape the path correctly. Do not depend on Linux font paths.
 
-7. BUG TTS / NETTOYAGE DES ASSETS CORRIGÉ
-- Le nettoyage de work/assets se faisait auparavant après la création éventuelle de la voix.
-- La V18 nettoie les assets AVANT de générer la voix.
-- La voix générée n'est donc plus supprimée juste avant le montage.
+7) FFmpeg MUSIC BUG
+A complex aevalsrc filter failed on Windows with:
+“No option name near '48000\\:d=35'”
+Replace fragile expression-string handling with robust filter arguments or file-based generation. Test the exact Windows command shape.
 
-8. MIX AUDIO RENFORCÉ
-- Le mix musique + voix utilise maintenant apad/amix/atrim pour garder une piste audio alignée sur la durée vidéo.
-- Le manifest indique réellement si une narration a été générée et quel provider l'a produite.
-- Windows SAPI reste un fallback de test ; les providers neuronaux restent disponibles par configuration.
+8) OUTPUT / QUALITY GATE
+The quality gate must check at least:
+- target site footage actually present
+- resolution/aspect ratio
+- valid video stream
+- valid audio stream when audio is enabled
+- duration policy
+- no internal debug/storyboard labels
+- no unexpectedly blank/near-blank scene dominating the video
+- audio not dramatically shorter than video
+- final MP4 readable by ffprobe
+- stale previous output not mistaken for the current render
 
-9. QUALITY GATE RENFORCÉ
-src/quality-gate.js vérifie désormais notamment :
-- existence de l'analyse ;
-- existence du storyboard ;
-- existence d'une session récente ;
-- cohérence URL cible / URL observée ;
-- cohérence manifest / analyse ;
-- résolution 1080x1920 ;
-- durée 12–28 s, avec cible idéale 18–24 s ;
-- présence du flux audio ;
-- durée audio proche de la vidéo ;
-- absence de captions contenant des labels internes ;
-- absence de scènes sans plage observée ;
-- absence de fallback synthétique déclaré ;
-- détection de longues séquences noires ;
-- détection de plans figés anormalement longs ;
-- stale output / session potentiellement obsolète.
+9) WINDOWS RUNTIME
+This project runs on Windows with PowerShell 7, Node 24.x, npm, Playwright, FFmpeg 9.x. Do not rely on Linux shell syntax. Use cross-platform Node APIs where possible and explicit Windows handling where needed.
 
-10. TESTS AJOUTÉS / RENFORCÉS
-- test-domain-validation.test.js couvre les redirections hors cible.
-- test-render-policy.test.js vérifie les règles « produit réel uniquement » et l'absence de fallback image fixe dans le renderer.
-- Les tests TTS existants restent présents.
-- package.json inclut désormais le nouveau test de politique de rendu.
+10) SECURITY / ROBUSTNESS
+Validate URL input. Prevent shell injection when invoking FFmpeg or other processes. Sanitize generated filenames. Never expose API keys in logs or committed files. Handle timeouts, partial files, browser crashes, and retries cleanly.
 
-11. DOCUMENTATION V18
-- README.txt mis à jour.
-- V18-CHANGELOG.txt ajouté.
-- config.example.json ne contient plus de fausses clés à copier par erreur.
+11) ARCHITECTURE
+I want you to distinguish these layers:
+A. Site explorer / interaction agent
+B. Observation model
+C. Creative planner / storyboard
+D. Capture selection
+E. Renderer
+F. Voice provider
+G. Music provider
+H. Quality gate
+Do not keep stuffing more logic into a single generer-video.js file.
 
-============================================================
-CE QUE TU DOIS FAIRE MAINTENANT
-============================================================
+12) CREATIVE BEHAVIOR
+For the target site, a good demo is closer to:
+“Tu as une idée mais tu ne sais pas par où commencer ?”
+→ show real Spark Idea UI
+→ type a realistic project idea
+→ click Analyse
+→ wait
+→ show real generated result
+→ show one or two useful result areas
+→ concise CTA.
+Do not narrate that you are doing “an analysis of the website”. The audience should feel that a real person is demonstrating the product.
 
-A. AUDIT COMPLET
-Lis absolument tout le dépôt :
-- src/*.js
-- src/interface/*
-- tests/*
-- package.json / package-lock.json
-- README
-- AGENTS.md
-- scripts PowerShell
-- changelogs
-- prompt existant
+WORKFLOW FOR THIS TASK
+1. Read every source file, README, installer, test, and changelog.
+2. Run the project and reproduce the current failures where possible.
+3. Produce a concise plan that names the root causes and files to change.
+4. Implement ALL root-cause fixes in one coherent pass.
+5. Add regression tests for each known failure above.
+6. Run syntax checks, tests, and at least one real render smoke test when the environment allows.
+7. Inspect the rendered file with ffprobe.
+8. Update README and changelog.
+9. Return a concise final report with:
+   - root causes found
+   - fixes implemented
+   - tests run and results
+   - exact remaining limitations, if any
 
-Ne suppose pas qu'un problème est réglé uniquement parce qu'un commentaire dit qu'il l'est.
-
-B. EXÉCUTION
-Quand l'environnement le permet :
-1. npm install / npm ci
-2. syntax check de TOUS les fichiers JS
-3. npm test
-4. test d'interaction réel
-5. test E2E réel sur https://spark-idea-two.vercel.app
-6. rendu réel
-7. ffprobe du MP4
-8. inspection des rapports générés
-
-Si une étape ne peut pas être exécutée à cause de l'environnement, dis exactement laquelle et pourquoi. Ne prétends pas qu'elle est passée.
-
-C. VÉRIFIE SPÉCIALEMENT CES RISQUES
-
-1. Le renderer doit toujours filmer le vrai site demandé.
-2. Aucun localhost ne doit apparaître dans la vidéo finale lorsque la cible est distante.
-3. Aucune ancienne session ne doit être réutilisée.
-4. Aucun bouton disabled ne doit être cliqué.
-5. Aucun index DOM fragile ne doit être utilisé après filtrage d'une autre liste.
-6. Une SPA / React / Vue peut modifier le DOM après remplissage : attendre l'état réel.
-7. Une redirection externe doit être considérée comme hors cible.
-8. Un popup/cookie banner ne doit pas casser le parcours si une stratégie raisonnable permet de le fermer.
-9. Les captures doivent réellement correspondre aux milestones utilisés dans le storyboard.
-10. Une scène manquante doit provoquer une erreur explicite, pas une invention visuelle.
-11. Le texte à l'écran doit rester lisible, court et correctement positionné.
-12. Aucun « HOOK », « CTA », « STORYBOARD », « DEBUG », « SCENE », « SP STUDIO » ou autre métadonnée interne ne doit être visible dans la vidéo.
-13. Le produit doit occuper suffisamment l'image : pas de grands vides inutiles.
-14. Le montage ne doit pas devenir une succession de cartes statiques.
-15. La musique ne doit pas écraser la voix.
-16. La narration ne doit pas finir beaucoup trop tôt par rapport à la vidéo.
-17. Si la voix Windows est utilisée, ne la présente jamais comme une voix premium.
-18. Les clés API ne doivent jamais apparaître dans les logs ou dans le dépôt.
-19. Les commandes FFmpeg doivent être sûres sous Windows.
-20. Les chemins avec espaces / accents doivent fonctionner.
-
-D. VÉRIFIE AUSSI L'ARCHITECTURE
-Je veux garder des responsabilités séparées :
-- exploration/interactions ;
-- observation ;
-- planning/storyboard ;
-- capture ;
-- renderer ;
-- TTS ;
-- musique ;
-- quality gate ;
-- serveur/UX.
-
-Si un fichier devient un « monstre » qui fait tout, refactorise proprement au lieu d'empiler des patches.
-
-E. CRÉATIVITÉ / QUALITÉ VIDÉO
-Le résultat attendu est :
-- hook humain ;
-- vrai produit visible immédiatement ;
-- interaction naturelle ;
-- résultat réel ;
-- bénéfice uniquement si vérifiable ;
-- CTA court.
-
-Pas de :
-- cartes blanches/noires inutiles ;
-- gros textes centrés qui cachent le produit ;
-- transitions excessives ;
-- musique sombre ;
-- titres techniques ;
-- faux résultats ;
-- promesses inventées ;
-- zooms absurdes ;
-- écran vide pendant plusieurs secondes.
-
-F. VOIX
-Audite particulièrement src/tts-provider.js.
-Je veux :
-- provider interface propre ;
-- OpenAI/ElevenLabs configurables par variables d'environnement ou config locale non versionnée ;
-- Windows SAPI seulement comme fallback local ;
-- gestion propre des erreurs réseau/API ;
-- pas de secret dans le dépôt ;
-- audio final correctement synchronisé ;
-- manifest exact.
-
-Si tu trouves un meilleur découpage pour générer la narration scène par scène avec timing, implémente-le si cela améliore réellement le résultat sans fragiliser le pipeline.
-
-G. WINDOWS
-Le produit final doit fonctionner sur Windows.
-Teste/inspecte notamment :
-- PowerShell ;
-- chemins Windows ;
-- ffmpeg ;
-- ffprobe ;
-- Playwright ;
-- encodage UTF-8 ;
-- caractères accentués ;
-- processus enfants ;
-- arrêt propre ;
-- absence de processus zombies ;
-- erreurs de timeout.
-
-H. QUALITÉ FINALE
-Ne considère PAS le projet terminé parce que :
-- le serveur démarre ;
-- le MP4 existe ;
-- ffprobe lit le fichier.
-
-Il faut également vérifier que le système produit une démonstration cohérente et que le quality gate refuse un rendu clairement cassé.
-
-Si tu peux automatiser davantage de contrôles objectifs, fais-le.
-
-============================================================
-RÈGLE IMPORTANTE
-============================================================
-
-Ne cherche pas à me faire plaisir.
-
-Si une partie de la V18 est encore mauvaise, corrige-la.
-Si une partie est architecturée de travers, refactore-la.
-Si un correctif précédent crée un nouveau problème, corrige le nouveau problème.
-Si une fonctionnalité est impossible sans dépendance externe, dis-le clairement et mets le meilleur fallback propre possible.
-
-Je préfère un système qui échoue proprement plutôt qu'un système qui fabrique une fausse vidéo « réussie ».
-
-============================================================
-LIVRABLE FINAL OBLIGATOIRE
-============================================================
-
-À la fin, laisse réellement les fichiers corrigés dans le dépôt.
-
-Puis réponds avec exactement ces sections :
-
-1. ÉTAT INITIAL
-Les défauts réellement trouvés dans la V18 reçue.
-
-2. PROBLÈMES CRITIQUES
-Ce qui pouvait encore produire un résultat faux, cassé ou non professionnel.
-
-3. CORRECTIONS EFFECTUÉES
-Fichier par fichier, avec les changements concrets.
-
-4. TESTS EXÉCUTÉS
-Commandes + résultat PASS/FAIL, sans inventer.
-
-5. TEST E2E / RENDU RÉEL
-Dire clairement si le vrai parcours Spark Idea a été exécuté et si un MP4 réel a été inspecté.
-
-6. CE QUI EST MAINTENANT GARANTI
-Uniquement les garanties réellement vérifiées.
-
-7. LIMITATIONS RESTANTES
-Ce qui dépend encore d'un service externe, d'une clé API, du réseau, de Windows, etc.
-
-8. ÉTAT FINAL
-Dire honnêtement si le dépôt est propre et prêt à être testé sur la machine Windows cible. Ne donne pas de note artificielle.
-
-IMPORTANT FINAL :
-Tu dois modifier le code, pas seulement rédiger des recommandations.
-Tu dois laisser une base propre.
-Tu dois privilégier la fiabilité et la qualité réelle du produit final plutôt que d'ajouter des fonctionnalités décoratives.
+IMPORTANT
+Do not answer with “this is complex” or “you should improve X”. Make the changes. Do not optimize for the number of commits. Optimize for one coherent, tested repair pass.

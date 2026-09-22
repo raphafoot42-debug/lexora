@@ -138,69 +138,20 @@ async function setFieldValue(page, loc, value) {
   await sleep(550);
 }
 
-async function dismissPopups(page) {
-  try {
-    const consentSelectors = [
-      'button:visible:has-text("Accepter")',
-      'button:visible:has-text("Accept")',
-      'button:visible:has-text("Tout accepter")',
-      'button:visible:has-text("Accept all")',
-      'button:visible:has-text("J\'accepte")',
-      'button:visible:has-text("Autoriser")',
-      'button:visible:has-text("Continuer sans accepter")'
-    ];
-    for (const sel of consentSelectors) {
-      const loc = page.locator(sel).first();
-      if (await loc.count().catch(() => 0) > 0 && await loc.isVisible().catch(() => false)) {
-        await loc.click({ timeout: 1500 }).catch(() => {});
-        await sleep(300);
-        break;
-      }
-    }
-  } catch {}
-}
-
-async function actionLocator(page, candidate) {
-  const name = String(candidate.text || candidate.aria || '').replace(/\s+/g, ' ').trim();
-  if (!name) return null;
-  try {
-    const loc = page.getByRole('button', { name, exact: true }).first();
-    if (await loc.count()) return loc;
-  } catch {}
-  try {
-    const link = page.getByRole('link', { name, exact: true }).first();
-    if (await link.count()) return link;
-  } catch {}
-  try {
-    const loc = page.getByRole('button', { name, exact: false }).first();
-    if (await loc.count()) return loc;
-  } catch {}
-  try {
-    const link = page.getByRole('link', { name, exact: false }).first();
-    if (await link.count()) return link;
-  } catch {}
-  try {
-    const re = new RegExp(`^${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}$`, 'i');
-    const loc = page.locator('button:visible,[role="button"]:visible,a:visible').filter({ hasText: re }).first();
-    if (await loc.count()) return loc;
-  } catch {}
-  try {
-    const loc = page.locator('button:visible,[role="button"]:visible,a:visible').filter({ hasText: name }).first();
-    if (await loc.count()) return loc;
-  } catch {}
-  return null;
-}
-
 async function bestEnabledAction(page) {
   const buttons = await visibleButtons(page);
-  const scored = buttons.map((b)=>({b,score:buttonScore(b)})).sort((a,b)=>b.score-a.score);
-  for (const item of scored) {
-    if (item.score <= 0) continue;
-    const loc = await actionLocator(page, item.b);
-    if (!loc) continue;
-    const disabled = await loc.isDisabled().catch(() => false);
-    if (!disabled && await loc.isVisible().catch(() => false)) {
-      return { loc, label: item.b.text || item.b.aria || 'Action', score: item.score };
+  const scored = buttons.map((b,i)=>({b,i,score:buttonScore(b)})).sort((a,b)=>b.score-a.score);
+  for(const item of scored){
+    if(item.score<=0) continue;
+    const all = page.locator('button:visible,[role="button"]:visible,a:visible');
+    // Use the text/aria on the real DOM element instead of trusting an index
+    // from a filtered list; filtered and raw lists can otherwise drift.
+    const candidates = all.filter({hasText:item.b.text||item.b.aria||''});
+    const count = await candidates.count().catch(()=>0);
+    for(let j=0;j<count;j++){
+      const loc=candidates.nth(j);
+      const disabled=await loc.isDisabled().catch(()=>false);
+      if(!disabled && await loc.isVisible().catch(()=>false)) return {loc,label:item.b.text||item.b.aria||'Action',score:item.score};
     }
   }
   return null;
@@ -272,7 +223,6 @@ async function run() {
   if(!/^https?:$/.test(u.protocol)) throw new Error('URL http(s) requise.');
 
   resetDir(CAPTURES); resetDir(SCENES);
-  fs.rmSync(path.join(VIDEOS,'session.webm'), {force:true});
   for (const f of ['site-analysis.json','storyboard.json','quality-report.json','render-manifest.json','voiceover-script.txt']) {
     try { fs.rmSync(path.join(DOWNLOADS,f),{force:true}); } catch {}
   }
@@ -313,7 +263,6 @@ async function run() {
     await page.waitForSelector('body',{timeout:15000});
     await page.waitForFunction(()=>document.body?.innerText?.trim().length>30,null,{timeout:15000}).catch(()=>{});
     await page.waitForLoadState('networkidle',{timeout:9000}).catch(()=>{});
-    await dismissPopups(page);
     await sleep(700);
     await addCursor(page);
     initial=await collectFacts(page);
@@ -440,23 +389,18 @@ async function run() {
     await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000}).catch(()=>{});
     await page.waitForSelector('body',{timeout:15000}).catch(()=>{});
     await sleep(750);
-    validateTargetDomain(url, page.url());
     const cta=await visibleButtons(page);
-    const ranked=cta.map(b=>({b,score:buttonScore(b)})).sort((a,b)=>b.score-a.score);
-    const ct=ranked.find(x=>x.score>0);
-    if(ct){
-      const loc=await actionLocator(page,ct.b);
-      if(loc){
-        await focus(loc).catch(()=>{});
-        await sleep(450);
-        mark('cta',{label:ct.b.text||ct.b.aria});
-      } else {
-        mark('cta');
-      }
+    const ct=cta.map((b,i)=>({b,i,score:buttonScore(b)})).sort((a,b)=>b.score-a.score)[0];
+    if(ct && ct.score>0){
+      const loc=page.locator('button:visible,[role="button"]:visible,a:visible').nth(ct.i);
+      await focus(loc).catch(()=>{});
+      await sleep(450);
+      mark('cta',{label:ct.b.text||ct.b.aria});
+      await screenshot(page,'06-cta.png');
     } else {
       mark('cta');
+      await screenshot(page,'06-cta.png');
     }
-    await screenshot(page,'06-cta.png');
 
     const facts=await collectFacts(page);
     if(!finalFacts) finalFacts=facts;
@@ -472,6 +416,7 @@ async function run() {
   }
 
   // Close marks with end time
+  const total = fs.existsSync(path.join(VIDEOS,'session.webm')) ? null : null;
   const timeline=[];
   const finalTime=(Date.now()-sessionStart)/1000;
   for(let i=0;i<marks.length;i++){

@@ -1,7 +1,5 @@
 {
-  "ttsProvider": "auto",
-  "openaiApiKey": "",
-  "elevenlabsApiKey": "",
-  "elevenlabsVoiceId": "",
-  "openaiVoice": "nova"
+  "ttsProvider": "elevenlabs",
+  "elevenlabsApiKey": "COLLE_TA_CLE_ELEVENLABS_ICI",
+  "openaiApiKey": "COLLE_TA_CLE_OPENAI_ICI"
 }

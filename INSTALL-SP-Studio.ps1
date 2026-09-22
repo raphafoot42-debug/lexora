@@ -3,9 +3,9 @@ $ErrorActionPreference = "Stop"
 $source = Split-Path -Parent $MyInvocation.MyCommand.Path
 $project = Join-Path $HOME "SP-Studio"
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$backup = Join-Path $project "backups\v18-$stamp"
+$backup = Join-Path $project "backups\v17-$stamp"
 
-Write-Host "SP Studio V18 - installation / mise a jour" -ForegroundColor Cyan
+Write-Host "SP Studio V17 - installation / mise a jour" -ForegroundColor Cyan
 Write-Host "Projet cible : $project"
 
 if (-not (Test-Path $source)) { throw "Dossier source introuvable : $source" }
@@ -32,6 +32,6 @@ try {
 } finally { Pop-Location }
 
 Write-Host ""
-Write-Host "SP Studio V18 est installe." -ForegroundColor Green
+Write-Host "SP Studio V17 est installe." -ForegroundColor Green
 Write-Host "Lance ensuite : node .\src\serveur.js"
 Write-Host "Puis ouvre http://localhost:3000"
